@@ -26,13 +26,17 @@ test_interpreters() {
   done
 }
 
+# The C locale and the first UTF-8 locale this host has, under the macOS
+# spelling or the glibc one that `locale -a` prints on Debian and Ubuntu.
 test_locales() {
+  local name
   printf '%s\n' C
-  if locale -a 2>/dev/null | grep -qx 'C.UTF-8'; then
-    printf '%s\n' C.UTF-8
-  elif locale -a 2>/dev/null | grep -qx 'en_US.UTF-8'; then
-    printf '%s\n' en_US.UTF-8
-  fi
+  for name in C.UTF-8 C.utf8 en_US.UTF-8 en_US.utf8; do
+    if locale -a 2>/dev/null | grep -qx "$name"; then
+      printf '%s\n' "$name"
+      return
+    fi
+  done
 }
 
 # Run <script> under every interpreter and locale; any output is a mismatch
@@ -388,6 +392,10 @@ test_fork_free_file_commands_match_and_keep_path_overrides() {
   printf 'one\n\n\n' > "$dir/trailing"
   : > "$dir/empty"
   printf 'x' > "$dir/plain"
+  # Bash's read drops a \001 after a truncated UTF-8 lead byte when the chunk
+  # also holds a raw \001 or \177, under a UTF-8 locale on Bash 5.2 and 5.3.
+  printf '\001a\343\001x' > "$dir/ctl-utf8"
+  printf '\177a\303\001x' > "$dir/del-utf8"
   printf 'no' > "$dir/unreadable"; chmod 000 "$dir/unreadable"
   ln -s /abs/target "$dir/abs-link"
   ln -s rel/target "$dir/rel-link"
@@ -408,7 +416,7 @@ if [ "${FM_TEST_NO_LOADABLES:-}" = 1 ]; then
     ! fm_loadable_ready "$b" || printf '%s builtin still loaded under FM_TEST_NO_LOADABLES\n' "$b"
   done
 fi
-for f in trailing empty plain unreadable missing d abs-link; do
+for f in trailing empty plain ctl-utf8 del-utf8 unreadable missing d abs-link; do
   want=$(cat "$d/$f" 2>/dev/null); wrc=$?
   got=; fm_read_file_to got "$d/$f"; grc=$?
   [ "$got:$grc" = "$want:$wrc" ] || printf 'read %s: helper %q rc=%s, cat %q rc=%s\n' "$f" "$got" "$grc" "$want" "$wrc"

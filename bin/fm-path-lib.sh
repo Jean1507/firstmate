@@ -142,6 +142,10 @@ fm_readlink_to() {  # <output-variable> <path>
 fm_read_file_to() {  # <output-variable> <path>
   local fm_content='' fm_chunk='' fm_opened=0
   if _fm_system_tool cat; then
+    # Read and strip bytes, not characters: under a UTF-8 locale Bash 5.2 and
+    # 5.3's read drops a \001 after a truncated multibyte lead byte. The local
+    # restores the caller's locale on return.
+    local LC_ALL=C
     # A directory opens without error but cat still fails reading it.
     [ ! -d "$2" ] || return 1
     # The file is opened by a compound command's redirection, not `$(<path)`:
