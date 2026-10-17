@@ -149,7 +149,9 @@ fm_read_file_to() {  # <output-variable> <path>
     # under ||. NUL bytes are dropped and trailing newlines removed, as `$(cat)`.
     { fm_opened=1; while IFS= read -r -d '' fm_chunk; do fm_content+=$fm_chunk; done; fm_content+=$fm_chunk; } 2>/dev/null <"$2" || :
     [ "$fm_opened" = 1 ] || return 1
-    while [ "${fm_content%$'\n'}" != "$fm_content" ]; do fm_content=${fm_content%$'\n'}; done
+    # Test only the last character: a `${fm_content%$'\n'}` probe scans every
+    # suffix once the content no longer ends in a newline, quadratic in size.
+    while [ "${fm_content: -1}" = $'\n' ]; do fm_content=${fm_content%?}; done
   else
     fm_content=$(cat "$2" 2>/dev/null) || return 1
   fi
