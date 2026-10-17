@@ -10,10 +10,10 @@
 # drain, and lock hot paths, where a host whose endpoint agent inspects every
 # process launch pays tens to hundreds of milliseconds per launch. Each takes its
 # fork-free route only on Bash 4 or newer and only when the command name resolves
-# through the caller's PATH to the platform's own /bin or /usr/bin tool, so a
-# caller or test that puts its own command first on PATH runs that command
-# exactly as before; otherwise, and on stock macOS Bash 3.2, it runs the
-# external command.
+# through the caller's PATH to the platform's own /bin or /usr/bin tool and no
+# shell function of that name exists, so a caller or test that interposes its
+# own command or function runs it exactly as before; otherwise, and on stock
+# macOS Bash 3.2, it runs the command by that name.
 #
 #   fm_loadable_ready <name>
 #       0 when the running bash's own loadable builtin <name> is loaded. Homebrew
@@ -70,10 +70,12 @@ fm_basename_to() {  # <output-variable> <path>
   printf -v "$1" '%s' "$fm_path"
 }
 
-# 0 when <name> resolves through PATH to the platform's own tool.
+# 0 when <name> is no shell function and resolves through PATH to the
+# platform's own tool.
 _fm_system_tool() {  # <name>
   local fm_tool
   [ "${BASH_VERSINFO[0]:-0}" -ge 4 ] || return 1
+  ! declare -F "$1" >/dev/null || return 1
   hash "$1" 2>/dev/null || return 1
   fm_tool=${BASH_CMDS[$1]-}
   [ "$fm_tool" = "/bin/$1" ] || [ "$fm_tool" = "/usr/bin/$1" ]
@@ -107,7 +109,7 @@ fm_loadable_run() {  # <rm|rmdir|ln|mktemp|chmod> [args...]
       fi
       ;;
   esac
-  command "$@"
+  "$@"
 }
 
 fm_lstat_to() {  # <assoc-array> <path>

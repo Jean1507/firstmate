@@ -434,12 +434,19 @@ fm_loadable_run rmdir "$owner" || printf 'rmdir failed\n'
 PATH="$3:$PATH"
 fm_read_file_to got "$d/plain"; fm_readlink_to got "$d/abs-link"; fm_loadable_run rm -f "$d/ops/none"
 [ "$(sort "$4" | tr '\n' ' ')" = 'cat readlink rm ' ] || printf 'PATH override not honored: ran %q\n' "$(sort "$4" | tr '\n' ' ')"
+shim_log=$4
+rm() { printf 'function\n' >> "$shim_log"; }
+: > "$4"
+fm_loadable_run rm -f "$d/ops/none"
+unset -f rm
+IFS= read -r ran < "$shim_log" || ran=
+[ "$ran" = function ] || printf 'shell function override not honored: ran %q\n' "$ran"
 rm -rf "$d/ops"
 SH
   run_everywhere "fork-free file commands" "$script" "$dir" "$shim" "$log"
   FM_BASH_LOADABLES=off run_everywhere "fork-free file commands without builtins" "$script" "$dir" "$shim" "$log"
   chmod 600 "$dir/unreadable"
-  pass "fork-free read, readlink, rm, rmdir, ln, mktemp and chmod match the commands and keep PATH overrides"
+  pass "fork-free read, readlink, rm, rmdir, ln, mktemp and chmod match the commands and keep PATH and function overrides"
 }
 
 test_wake_clean_field_matches_tr() {

@@ -9,7 +9,8 @@
 #
 # Most functions are pure, side-effect-free reads of status files: each takes
 # what it needs as arguments and touches no globals beyond the optional
-# FM_CAPTAIN_RE override. Consumers layer their own dedup/marker state on top (the
+# FM_CAPTAIN_RE override and the in-memory metadata fields and birth cache that
+# "Status-file metadata reads" below describes. Consumers layer their own dedup/marker state on top (the
 # daemon keeps its escalation-digest seen-markers; the watcher keeps its .seen-*
 # signatures).
 # Status-span classification captures one file endpoint and reports every
