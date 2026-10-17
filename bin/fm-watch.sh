@@ -263,7 +263,7 @@ stat_mtime() { fm_path_mtime "$1"; }
 
 POLL=${FM_POLL:-15}                   # seconds between cycles
 # The liveness beacon is touched at the top of each cycle and before each long
-# phase (watcher_beat), the last shortly before the terminal wait below
+# phase (watcher_beat), the last immediately before the terminal wait below
 # (event_wait_or_sleep), so a healthy cycle's beacon can legitimately age up to
 # POLL seconds between touches. fm_poll_derived_grace (bin/fm-wake-lib.sh, already sourced
 # transitively above) is the single owner of the max(300, poll+60)
@@ -2378,6 +2378,17 @@ heartbeat_scan_finds_actionable() {
   return "$found"
 }
 
+BEAT="$STATE/.last-watcher-beat"
+
+# Liveness beacon for fm-guard.sh: a fresh mtime means a watcher is alive. The
+# cycle beats at its start, again before each phase that can run long, and
+# immediately before its terminal wait, so a slow but live cycle never reads as
+# a stalled watcher. The beacon is an empty file whose mtime is the whole
+# signal, and truncating it refreshes that mtime without launching touch(1).
+watcher_beat() {
+  : > "$BEAT"
+}
+
 # event_wait_or_sleep: the terminal wait of each supervision cycle. For a home
 # with push-capable windows (herdr), it replaces the blind `sleep POLL` with a
 # bounded wait on the backend's native transition stream, so a crew going
@@ -2412,6 +2423,7 @@ event_wait_or_sleep() {
   done < <(recorded_windows)
 
   if [ "${#windows[@]}" -eq 0 ]; then
+    watcher_beat
     sleep "$POLL"
     return
   fi
@@ -2427,6 +2439,7 @@ event_wait_or_sleep() {
     fi
     _event_cap_fails=0
   fi
+  watcher_beat
   if [ "$_event_cap_ok" != 1 ]; then
     sleep "$POLL"
     return
@@ -2445,6 +2458,7 @@ event_wait_or_sleep() {
       # pure polling for the rest of this watcher process.
       _event_cap_fails=$((_event_cap_fails + 1))
       [ "$_event_cap_fails" -ge "$EVENT_CAP_FAIL_MAX" ] && _event_cap_ok=0
+      watcher_beat
       sleep "$POLL"
       ;;
     *)
@@ -2499,16 +2513,6 @@ evict_stalled_holder() {
 
 EVICTED_PID=
 EVICTED_BEAT_AGE=
-BEAT="$STATE/.last-watcher-beat"
-
-# Liveness beacon for fm-guard.sh: a fresh mtime means a watcher is alive. The
-# cycle beats at its start and again before each phase that can run long, so a
-# slow but live cycle never reads as a stalled watcher. The beacon is an empty
-# file whose mtime is the whole signal, and truncating it refreshes that mtime
-# without launching touch(1).
-watcher_beat() {
-  : > "$BEAT"
-}
 while ! fm_lock_try_acquire "$WATCH_LOCK"; do
   if [ -n "${FM_LOCK_HELD_PID:-}" ]; then
     if [ -e "$BEAT" ]; then

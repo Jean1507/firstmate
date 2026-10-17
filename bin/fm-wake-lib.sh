@@ -1391,6 +1391,7 @@ fm_lock_release() {
     [ "$pid" = "$current" ] || return 0
     fm_lock_points_to_owner "$lockdir" "$ownerdir" || return 0
     fm_loadable_run rm -f "$lockdir" 2>/dev/null || return 0
+    ! { [ -L "$lockdir" ] && fm_lock_points_to_owner "$lockdir" "$ownerdir"; } || return 0
     fm_lock_discard_owner "$ownerdir"
     return 0
   fi

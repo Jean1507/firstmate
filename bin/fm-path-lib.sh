@@ -26,7 +26,9 @@
 #       Runs the command through its builtin, re-enabled for that one call, or
 #       through the external tool. Those builtins match the external tools for
 #       the options firstmate passes: rm -f, rmdir, ln -s, mktemp -d, and an
-#       octal chmod.
+#       octal chmod. The one difference is that the rm builtin's -f returns 0
+#       even when an unlink fails, so a caller that acts on rm's status checks
+#       the path afterwards.
 #   fm_lstat_to <assoc-array> <path>
 #       Fills the caller's associative array from one lstat(2) through the
 #       `stat` builtin: device, inode, size, mtime, ctime, perms, type, and

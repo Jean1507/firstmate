@@ -250,6 +250,7 @@ test_status_stat_helpers_match_the_per_field_stat_reads() {
   make_status_fixtures "$dir"
   cat > "$script" <<'SH'
 . "$1/bin/fm-classify-lib.sh"
+[ "${FM_TEST_NO_LOADABLES:-}" != 1 ] || ! fm_loadable_ready stat || printf 'stat builtin still loaded under FM_TEST_NO_LOADABLES\n'
 [ "${3:-}" != legacy-format ] || _FM_STATUS_STAT_FORMAT='%d'
 ref_ident() {
   local f=$1 epoch birth ident
@@ -402,6 +403,11 @@ SH
   cat > "$script" <<'SH'
 . "$1/bin/fm-path-lib.sh"
 d=$2
+if [ "${FM_TEST_NO_LOADABLES:-}" = 1 ]; then
+  for b in stat rm rmdir ln mktemp chmod; do
+    ! fm_loadable_ready "$b" || printf '%s builtin still loaded under FM_TEST_NO_LOADABLES\n' "$b"
+  done
+fi
 for f in trailing empty plain unreadable missing d abs-link; do
   want=$(cat "$d/$f" 2>/dev/null); wrc=$?
   got=; fm_read_file_to got "$d/$f"; grc=$?
@@ -460,6 +466,7 @@ test_pending_reply_record_reads_match_the_pipelines() {
   cat > "$script" <<'SH'
 . "$1/bin/fm-pending-reply-lib.sh"
 d=$2
+[ "${FM_TEST_NO_LOADABLES:-}" != 1 ] || ! fm_loadable_ready stat || printf 'stat builtin still loaded under FM_TEST_NO_LOADABLES\n'
 for rec in record crlf missing status; do
   for key in phase task_id empty delivered_epoch last phase_x absent; do
     want=$(grep "^${key}=" "$d/$rec" 2>/dev/null | tail -1 | cut -d= -f2- || true; printf .)
@@ -498,6 +505,31 @@ SH
   pass "wake row fields are cleaned exactly as tr did"
 }
 
+test_lock_release_keeps_the_owner_when_the_link_survives() {
+  local script="$TMP_ROOT/lock-release.sh" dir="$TMP_ROOT/lock-release"
+  if [ "$(id -u)" = 0 ]; then
+    pass "lock release owner retention skipped as root (directory permissions do not block root)"
+    return
+  fi
+  mkdir -p "$dir"
+  cat > "$script" <<'SH'
+. "$1/bin/fm-wake-lib.sh"
+d=$(mktemp -d "$2/run.XXXXXX") || exit 1
+lock="$d/q.lock"
+fm_lock_try_acquire "$lock" || { printf 'acquire failed\n'; exit 0; }
+owner=$(fm_lock_link_owner "$lock")
+chmod 555 "$d"
+fm_lock_release "$lock"
+chmod 755 "$d"
+[ -L "$lock" ] || printf 'lock link was unlinked from a read-only directory\n'
+[ -f "$owner/pid" ] || printf 'release discarded the owner record while the lock link still names it\n'
+fm_lock_release "$lock"
+[ ! -L "$lock" ] && [ ! -e "$owner" ] || printf 'release in a writable directory left the lock link or owner behind\n'
+SH
+  run_everywhere "lock release with a surviving link" "$script" "$dir"
+  pass "lock release keeps the owner record while an unlink failure leaves the lock link in place"
+}
+
 if [ -n "${FM_TEST_ONLY:-}" ]; then
   "$FM_TEST_ONLY"
 else
@@ -512,4 +544,5 @@ else
   test_fork_free_file_commands_match_and_keep_path_overrides
   test_wake_clean_field_matches_tr
   test_pending_reply_record_reads_match_the_pipelines
+  test_lock_release_keeps_the_owner_when_the_link_survives
 fi
