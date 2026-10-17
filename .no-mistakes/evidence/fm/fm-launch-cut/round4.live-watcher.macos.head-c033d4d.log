@@ -1,0 +1,3 @@
+== live watcher at head c033d4d, macOS, lab FM_HOME
+bash: #!/usr/bin/env bash  watcher alive after ~20s: yes; poll-cycle tops: 7; beacon samples: 36; max beacon age: 6s (FM_POLL=1)
+watcher output (first 3 lines):

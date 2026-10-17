@@ -1,0 +1,2 @@
+head-650e448c test_self_merge_and_poll_publish_one_outcome exit=1 elapsed=129s :: not ok - merge-outcome-committed: watcher failed:  
+base-85942464 test_self_merge_and_poll_publish_one_outcome exit=1 elapsed=125s :: not ok - merge-outcome-committed: watcher failed:  

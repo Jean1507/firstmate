@@ -1,0 +1,6 @@
+fm-voice-relay exit=1 elapsed=68s
+fm-inbox exit=0 elapsed=153s
+fm-mail-check exit=0 elapsed=180s
+fm-mail exit=0 elapsed=205s
+fm-pr-check-security exit=1 elapsed=1319s
+fm-secondmate-safety exit=0 elapsed=1522s

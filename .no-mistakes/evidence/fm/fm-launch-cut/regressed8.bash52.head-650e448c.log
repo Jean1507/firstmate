@@ -1,0 +1,14 @@
+bash 5.2.15(1)-release tree=head-650e448c git=2.39.5 tmux=3.3a ps=/usr/bin/ps
+fm-inbox exit=0 elapsed=8s ok=16 notok=0
+fm-mail-check exit=0 elapsed=6s ok=17 notok=0
+fm-mail exit=0 elapsed=12s ok=57 notok=0
+fm-voice-relay exit=0 elapsed=35s ok=42 notok=0
+fm-contributions exit=1 elapsed=25s ok=1 notok=58
+not ok - Bearings could not read contribution fixture
+not ok - fixture mutation failed
+not ok - Bearings could not read unchecked fixture
+not ok - fixture mutation failed
+fm-pr-check-security exit=1 elapsed=0s ok=0 notok=1
+not ok - these tests read glab's JSON with the real jq, which was not found
+fm-secondmate-safety exit=0 elapsed=41s ok=81 notok=0
+fm-watch-triage exit=0 elapsed=750s ok=144 notok=0

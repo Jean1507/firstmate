@@ -1,0 +1,5 @@
+bash 5.2.37(1)-release tree=head git=2.47.3 tmux=3.5a uid=1000
+fm-fork-free-helpers exit=0 elapsed=4s ok=12 notok=0
+fm-inbox exit=0 elapsed=7s ok=16 notok=0
+fm-mail-check exit=0 elapsed=7s ok=17 notok=0
+fm-mail exit=0 elapsed=11s ok=57 notok=0

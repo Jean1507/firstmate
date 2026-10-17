@@ -1,0 +1,8 @@
+test_beacon_stays_fresh_while_absorbing exit=0 elapsed=21s :: ok - the liveness beacon stays fresh while the watcher absorbs benign wakes (fm-guard never false-alarms)
+test_secondmate_routine_progress_absorbed_then_note_surfaced exit=0 elapsed=17s :: ok - a busy secondmate's routine working: is absorbed while its later note: still surfaces
+test_permission_recovery_surfaces_preserved_status exit=0 elapsed=30s :: ok - permission recovery surfaces content from the unadvanced position
+test_term_stops_a_watcher_blocked_inside_a_poll exit=0 elapsed=26s :: ok - TERM stops a watcher blocked inside a poll and still runs its cleanup
+test_busy_pane_repeated_escalation_reaches_demand_deep_inspection exit=0 elapsed=112s :: ok - repeated busy turn-age escalations reuse the existing escalation counter and demand deep inspection at the threshold
+test_exited_declared_pause_is_bounded_but_live_gate_surfaces exit=0 elapsed=73s :: ok - exited declared-pause and captain-held panes use bounded pause cadence while a live decision gate still surfaces once
+test_nonterminal_stale_pause_transitions_reclassify_unchanged_hash exit=0 elapsed=48s :: ok - unchanged stale hashes reclassify when a crew enters or leaves pause
+test_triage_log_size_cap_accepts_spaced_wc_counts exit=0 elapsed=12s :: ok - triage log capping handles wc byte counts with leading spaces

@@ -1,0 +1,8 @@
+ok - fm-mail-check: help and usage plumbing
+ok - fm-mail-check: arm writes and binds, re-arm is idempotent, disarm removes
+ok - fm-mail-check: arm resolves a relative home into the shim
+ok - fm-mail-check: arm refuses a symlink at the shim path
+ok - fm-mail-check: arm refuses without the mail plane
+not ok - a successful poll that surfaces new mail emits one wake line (missing: 'mail: new mail: woke for 42')
+--- output ---
+mail: poll failed (rc=1)

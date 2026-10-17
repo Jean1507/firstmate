@@ -1,0 +1,25 @@
+== 3.2.57(1)-release tree=/Users/jean/.no-mistakes/worktrees/73d83b691d3f/01M54PFQAC5EP0HSC1PE9Q7MHF; .wake-queue.seq before: absent
+-- note 1 exit=0: queued 1792265313-18Cwo9
+-- note 2 exit=0: queued 1792265328-hcodE4
+-- .wake-queue.seq:  2 \n 
+-- wake rows: 2
+   1	check	inbox:1792265313-18Cwo9
+   2	check	inbox:1792265328-hcodE4
+-- leftover lock: 0
+== 5.3.15(1)-release tree=/Users/jean/.no-mistakes/worktrees/73d83b691d3f/01M54PFQAC5EP0HSC1PE9Q7MHF; .wake-queue.seq before: absent
+-- note 1 exit=0: queued 1792265347-aNaFWz
+-- note 2 exit=0: queued 1792265353-dtAxyB
+-- .wake-queue.seq:  2 \n 
+-- wake rows: 2
+   1	check	inbox:1792265347-aNaFWz
+   2	check	inbox:1792265353-dtAxyB
+-- leftover lock: 0
+== Debian container
+== 5.2.37(1)-release tree=/home/fm/head; .wake-queue.seq before: absent
+-- note 1 exit=0: queued 1792265362-W9KhIo
+-- note 2 exit=0: queued 1792265363-VHYMSx
+-- .wake-queue.seq:  2 \n
+-- wake rows: 2
+   1	check	inbox:1792265362-W9KhIo
+   2	check	inbox:1792265363-VHYMSx
+-- leftover lock: 0

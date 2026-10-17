@@ -1,0 +1,35 @@
+# round5: throwaway python:3.12-slim-trixie container (Debian, bash 5.2.37), non-root user; started Sat Oct 17 13:19:54 PDT 2026 while the macOS base A/B arm was on its third seeding attempt
+bash 5.2.37(1)-release uid=1000 loadables-dir=0 entries
+C C.utf8 POSIX 
+tests/fm-fork-free-helpers.test.sh (head) exit=0 elapsed=5s ok=12 notok=0
+head's tests/fm-fork-free-helpers.test.sh against pre-fix c033d4d lib: exit=1 elapsed=5s ok=7 notok=1
+not ok - fork-free file commands differs under /usr/bin/bash (C.utf8):
+read ctl-utf8: helper $'\001a\343x' rc=0, cat $'\001a\343\001x' rc=0
+read stdout ctl-utf8: helper $'\001a\343x' rc=0, cat $'\001a\343\001x' rc=0
+read del-utf8: helper $'\177a\303x' rc=0, cat $'\177a\303\001x' rc=0
+read stdout del-utf8: helper $'\177a\303x' rc=0, cat $'\177a\303\001x' rc=0
+== head-d9a6acb bash=5.2.37(1)-release k=8 wall=0.88s
+   exit codes (count rc):       8 0 
+   .wake-queue.seq: 8
+   row seqs: 1792268414 1792268414 1792268415 1792268415 1792268415 1792268415 1792268415 1792268415 
+   distinct row seqs: 2
+   leftover lock/owner entries in state: 0
+== base-ce69740 bash=5.2.37(1)-release k=8 wall=0.89s
+   exit codes (count rc):       8 0 
+   .wake-queue.seq: 8
+   row seqs: 1792268415 1792268415 1792268415 1792268416 1792268416 1792268416 1792268416 1792268416 
+   distinct row seqs: 2
+   leftover lock/owner entries in state: 0
+== head-d9a6acb status_logs=30 bash=PATH bash 5.2.37(1)-release
+   drain#1 rc=0 2.95s | drain#2 rc=0 8.08s note-lines=3 | drain#3 rc=0 7.43s note-lines=0
+   drain#2 note lines:
+     t11 note: t11 picked option B
+     t3 note: answer for t3 is ready
+     t7 note: café décision prête – t7
+== base-ce69740 status_logs=30 bash=PATH bash 5.2.37(1)-release
+   drain#1 rc=0 7.01s | drain#2 rc=0 9.43s note-lines=3 | drain#3 rc=0 10.17s note-lines=0
+   drain#2 note lines:
+     t11 note: t11 picked option B
+     t3 note: answer for t3 is ready
+     t7 note: café décision prête – t7
+container exit=0

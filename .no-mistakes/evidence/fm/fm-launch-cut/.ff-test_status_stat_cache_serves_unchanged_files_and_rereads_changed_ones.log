@@ -1,0 +1,1 @@
+test_status_stat_cache_serves_unchanged_files_and_rereads_changed_ones [exit=0] ok - the birth cache serves unchanged status files with no stat(1) launch and rereads every changed one

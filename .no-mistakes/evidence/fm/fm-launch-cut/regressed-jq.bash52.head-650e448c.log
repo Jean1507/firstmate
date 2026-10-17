@@ -1,0 +1,7 @@
+bash 5.2.15(1)-release tree=head-650e448c git=2.39.5 tmux=3.3a ps=/usr/bin/ps
+fm-contributions exit=1 elapsed=253s ok=52 notok=6
+not ok - ready-for-pr on an explicitly filed issue must become a planning wake
+not ok - a fresh open issue did not remain measured maintainer triage
+not ok - add/remove between polls lost ready-for-pr transition
+not ok - data root '/tmp/fm-contributions.v3G0T2/task-identity/data' named tasks [
+fm-pr-check-security exit=0 elapsed=156s ok=47 notok=0

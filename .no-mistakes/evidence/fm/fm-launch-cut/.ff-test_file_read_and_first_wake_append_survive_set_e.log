@@ -1,0 +1,1 @@
+test_file_read_and_first_wake_append_survive_set_e [exit=0] ok - fm_read_file_to and the first wake append on a fresh state dir survive a set -e caller

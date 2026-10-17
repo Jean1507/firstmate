@@ -1,0 +1,8 @@
+[09:11:22 head] watcher A (47294) running: lock link -> .watch.lock.owner.jQ2tXQ (owner dir present, pid file 47294); owner dirs on disk: 1
+[09:11:23 head] second watcher B on the same home: rc=0, says 'watcher: already running pid 47294'; A alive: yes
+[09:11:24 head] after SIGTERM to A: no lock link; owner dirs on disk: 0
+[09:11:52 head] watcher C (52605) running: lock link -> .watch.lock.owner.4Iro8L (owner dir present, pid file 52605); owner dirs on disk: 1
+[09:11:54 head] after SIGTERM to C while state/ is read-only (unlink fails): lock link -> .watch.lock.owner.4Iro8L (owner dir present, pid file 52605); owner dirs on disk: 1
+[09:11:57 head] watcher D exited rc=1: stdout 'check: rearm-resurface ' stderr '': no lock link; owner dirs on disk: 0
+[09:11:57 head] after SIGTERM to D: no lock link; owner dirs on disk: 0
+# note: the base replay of this scenario was stopped before completing to stay within the test budget; only the head run is reported.

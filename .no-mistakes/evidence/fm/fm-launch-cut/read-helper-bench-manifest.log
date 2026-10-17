@@ -1,0 +1,4 @@
+bash 5.3.15 base-85942464:  10rows(472B)=0.40ms/read  30rows(1464B)=0.45ms/read  100rows(4964B)=0.50ms/read
+bash 5.3.15 head-650e448c:  10rows(472B)=0.50ms/read  30rows(1464B)=0.95ms/read  100rows(4964B)=5.50ms/read
+bash 5.2.15 base-85942464:  10rows(472B)=0.05ms/read  30rows(1464B)=0.10ms/read  100rows(4964B)=0.10ms/read
+bash 5.2.15 head-650e448c:  10rows(472B)=0.10ms/read  30rows(1464B)=0.40ms/read  100rows(4964B)=2.70ms/read

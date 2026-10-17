@@ -1,0 +1,13 @@
+bash 5.2.15(1)-release uid=1000 tree=base-85942464
+fm-inbox exit=1 elapsed=0s ok=0 notok=1
+not ok - plain note should succeed
+fm-mail-check exit=1 elapsed=0s ok=5 notok=1
+not ok - a successful poll that surfaces new mail emits one wake line (missing: 'mail: new mail: woke for 42')
+fm-mail exit=1 elapsed=1s ok=8 notok=1
+not ok - poll must succeed when python3 lists mail: expected exit 0, got 1
+fm-voice-relay exit=1 elapsed=1s ok=4 notok=1
+not ok - note should not need any configuration
+fm-contributions exit=1 elapsed=25s ok=1 notok=58
+not ok - Bearings could not read contribution fixture
+not ok - fixture mutation failed
+not ok - Bearings could not read unchecked fixture

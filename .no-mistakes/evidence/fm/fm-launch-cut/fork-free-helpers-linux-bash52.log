@@ -1,0 +1,17 @@
+GNU bash, version 5.2.15(1)-release (aarch64-unknown-linux-gnu)
+/usr/bin/perl
+/usr/bin/od
+ok - fm_dirname_to and fm_basename_to match dirname and basename on every edge case
+ok - fm_epoch_seconds_to reads the clock like date +%s and forks date at most as often
+ok - signal seen paths and absolute lock paths are byte-identical to the dirname/basename/tr forms
+ok - recovery marker reads accept exactly the one-line records wc -l accepted
+ok - window_to_task resolves every recorded window exactly as the grep/tail/cut pipeline did
+ok - classify stat helpers resolve the kernel name once per process
+ok - status identity, size, mtime and signature match the per-field stat reads on every path kind and fallback
+skip: no bash stat builtin; the birth cache is exercised only where bash ships its stat loadable
+ok - fork-free read, readlink, rm, rmdir, ln, mktemp and chmod match the commands and keep PATH and function overrides
+ok - fm_read_file_to and the first wake append on a fresh state dir survive a set -e caller
+ok - wake row fields are cleaned exactly as tr did
+ok - pending-reply field reads and file signatures match the grep/tail/cut and stat pipelines
+ok - lock release owner retention skipped as root (directory permissions do not block root)
+exit=0

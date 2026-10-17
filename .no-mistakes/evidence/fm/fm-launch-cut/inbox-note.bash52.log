@@ -1,0 +1,22 @@
+== base-85942464: bash 5.2.15(1)-release tree=base-85942464
+-- state before: 
+-- fm-inbox.sh note exit=1
+-- stdout: 
+-- stderr: 
+-- state after: .wake-queue.lock .wake-queue.lock.owner.GD1FWb .watcher-down inbox 
+-- .wake-queue.seq: <absent>
+-- inbox notes: 
+
+== head-650e448c: bash 5.2.15(1)-release tree=head-650e448c
+-- state before: 
+-- fm-inbox.sh note exit=0
+-- stdout: queued 1792257236-7aOyCD
+  live note from head-650e448c
+  firstmate will pick this up at its next check.
+-- stderr: 
+-- state after: .wake-queue .wake-queue.seq .watcher-down inbox 
+-- .wake-queue.seq: 1
+-- .wake-queue:
+1792257236	1	check	inbox:1792257236-7aOyCD	check: captain inbox note 1792257236-7aOyCD - live note from head-650e448c
+-- inbox notes: 
+

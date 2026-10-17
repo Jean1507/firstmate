@@ -1,0 +1,3 @@
+1000
+ok - lock release keeps the owner record while an unlink failure leaves the lock link in place
+exit=0

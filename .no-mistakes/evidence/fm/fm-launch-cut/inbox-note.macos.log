@@ -1,0 +1,26 @@
+== head-650e448c-macos: bash 3.2.57(1)-release tree=01M54PFQAC5EP0HSC1PE9Q7MHF
+-- state before: 
+-- fm-inbox.sh note exit=0
+-- stdout: queued 1792257255-3eCnkG
+  live note from head-650e448c-macos
+  firstmate will pick this up at its next check.
+-- stderr: 
+-- state after: .wake-queue .wake-queue.seq .watcher-down inbox 
+-- .wake-queue.seq: 1
+-- .wake-queue:
+1792257257	1	check	inbox:1792257255-3eCnkG	check: captain inbox note 1792257255-3eCnkG - live note from head-650e448c-macos
+-- inbox notes: 
+
+== head-650e448c-macos: bash 5.3.15(1)-release tree=01M54PFQAC5EP0HSC1PE9Q7MHF
+-- state before: 
+-- fm-inbox.sh note exit=0
+-- stdout: queued 1792257264-Ydbc24
+  live note from head-650e448c-macos
+  firstmate will pick this up at its next check.
+-- stderr: 
+-- state after: .wake-queue .wake-queue.seq .watcher-down inbox 
+-- .wake-queue.seq: 1
+-- .wake-queue:
+1792257264	1	check	inbox:1792257264-Ydbc24	check: captain inbox note 1792257264-Ydbc24 - live note from head-650e448c-macos
+-- inbox notes: 
+

@@ -1,0 +1,7 @@
+bash 5.2.15(1)-release uid=1000 tree=branch-base-ce697402 (image has no ps, no git)
+fm-inbox exit=1 elapsed=8s ok=12 notok=1
+not ok - a live claude-named holder is a held lock (expected 'held', got 'unknown')
+fm-contributions exit=1 elapsed=24s ok=1 notok=58
+not ok - Bearings could not read contribution fixture
+not ok - fixture mutation failed
+not ok - Bearings could not read unchecked fixture

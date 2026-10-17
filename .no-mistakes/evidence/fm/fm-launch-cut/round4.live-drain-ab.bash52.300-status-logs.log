@@ -1,0 +1,4 @@
+== live: real bin/fm-wake-drain.sh on a lab FM_HOME (Debian bash 5.2 container), 300 status logs + natural one-row-per-task manifest; three notes appended before drain #1
+lab FM_HOME=/tmp/fm-lab.9fnhTC status-logs=300 manifest rows=300 bytes=21000
+head       drain#1 rc=0 255.38s  unread-lines=3 | drain#2 rc=0 196.57s unread-lines=0
+prev650    drain#1 still running after 04:41 (elapsed per ps) when the run was stopped for budget; base8594 not reached

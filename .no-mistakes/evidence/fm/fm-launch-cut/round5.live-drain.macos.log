@@ -1,0 +1,7 @@
+# round5: real fm-wake-drain.sh on a lab FM_HOME, macOS, 30 working status logs, three note: lines appended between drains (ran concurrently with the bash 3.2 inbox comparison)
+== head-d9a6acb status_logs=30 bash=PATH bash 5.3.15(1)-release
+   drain#1 rc=0 30.02s | drain#2 rc=0 126.35s note-lines=3 | drain#3 rc=0 27.09s note-lines=0
+   drain#2 note lines:
+     t11 note: t11 picked option B
+     t3 note: answer for t3 is ready
+     t7 note: café décision prête – t7

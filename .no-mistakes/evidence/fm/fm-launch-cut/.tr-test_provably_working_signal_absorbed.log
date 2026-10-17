@@ -1,0 +1,1 @@
+test_provably_working_signal_absorbed [exit=0] ok - a no-verb signal whose crew is provably working is absorbed (no exit, no queue, suppressor advanced, beacon present)

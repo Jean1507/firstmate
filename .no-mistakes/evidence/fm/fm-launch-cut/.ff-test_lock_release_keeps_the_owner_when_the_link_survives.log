@@ -1,0 +1,1 @@
+test_lock_release_keeps_the_owner_when_the_link_survives [exit=0] ok - lock release keeps the owner record while an unlink failure leaves the lock link in place

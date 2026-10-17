@@ -1,0 +1,8 @@
+[15:33:54 head] watcher surfaced: signal: <LAB>/state/deploy.status 
+[15:33:54 head] cycle took 9 s with a 8 s coalescing wait; beacon age when the cycle finished: 1 s
+[15:34:35 base] watcher surfaced: signal: <LAB>/state/deploy.status 
+[15:34:35 base] cycle took 9 s with a 8 s coalescing wait; beacon age when the cycle finished: 9 s
+[15:35:15 head] watcher surfaced: signal: <LAB>/state/deploy.status 
+[15:35:15 head] cycle took 8 s with a 8 s coalescing wait; beacon age when the cycle finished: 0 s
+[15:35:57 base] watcher surfaced: signal: <LAB>/state/deploy.status 
+[15:35:57 base] cycle took 9 s with a 8 s coalescing wait; beacon age when the cycle finished: 8 s

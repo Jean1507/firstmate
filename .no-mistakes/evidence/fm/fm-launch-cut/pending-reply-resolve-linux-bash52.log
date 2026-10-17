@@ -1,0 +1,8 @@
+[15:48:18 head] pending-reply record 152d04d9820df971: phase=awaiting_report delivered_epoch set: yes
+[15:48:38 head] watcher settled; record phase still awaiting_report
+[15:48:39 head] after the correlated report: phase=resolved, resolved_via=status, parent_status_scan_signature set: yes
+[15:48:40 head] watcher reported: signal: <LAB>/state/mate1.status 
+[15:48:40 base] pending-reply record 004442a68a7890d0: phase=awaiting_report delivered_epoch set: yes
+[15:49:00 base] watcher settled; record phase still awaiting_report
+[15:49:01 base] after the correlated report: phase=resolved, resolved_via=status, parent_status_scan_signature set: yes
+[15:49:02 base] watcher reported: signal: <LAB>/state/mate1.status 

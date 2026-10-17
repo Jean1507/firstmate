@@ -1,0 +1,21 @@
+# round5: real bin/fm-watch.sh steady-state poll cycles on lab FM_HOMEs, macOS (SentinelOne), Homebrew bash 5.3.15, FM_POLL=1, 30 working status logs + 1 cycle-timestamp custom check; head vs branch base, run sequentially
+13:12  up 5 days,  3:42, 8 users, load averages: 4.58 5.17 6.07
+== head-d9a6acb status_logs=30 run=90s watcher_rc=0 (142 = stopped by the run alarm, i.e. stayed alive)
+   seeding: seed1: signal: /var/folders/nd/1l92j86j7cs95prv_m5w_gjw0000gn/T//fm (19.3s since seeding began);
+   cycles=0 mean_cycle=0.00s median_cycle=0.00s max_cycle=0.00s (each includes the FM_POLL=1 s sleep)
+   beacon samples=6 max_age=12.9s
+   watcher stdout: check: rearm-resurface
+13:12  up 5 days,  3:42, 8 users, load averages: 4.45 5.08 6.01
+== base-ce69740 status_logs=30 run=90s watcher_rc=142 (142 = stopped by the run alarm, i.e. stayed alive)
+   seeding: seed1:  (404.5s since seeding began); seed2: check: rearm-resurface (423.1s since seeding began); seed3:  (831.4s since seeding began);
+   cycles=1 mean_cycle=0.00s median_cycle=0.00s max_cycle=0.00s (each includes the FM_POLL=1 s sleep)
+   beacon samples=235 max_age=407.7s
+13:28  up 5 days,  3:58, 8 users, load averages: 10.65 9.75 7.80
+# round5 (re-run of the head arm with the restart step; base arm above never finished seeding): real bin/fm-watch.sh steady state, macOS, Homebrew bash 5.3.15, FM_POLL=1, 30 working status logs
+13:29  up 5 days,  3:59, 8 users, load averages: 7.73 9.14 7.69
+== head-d9a6acb status_logs=30 run=90s watcher_rc=0 (142 = stopped by the run alarm, i.e. stayed alive)
+   seeding: seed1: signal: /var/folders/nd/1l92j86j7cs95prv_m5w_gjw0000gn/T//fm (34.9s since seeding began); restart: check: rearm-resurface;
+   cycles=0 mean_cycle=0.00s median_cycle=0.00s max_cycle=0.00s (each includes the FM_POLL=1 s sleep)
+   beacon samples=36 max_age=10.1s
+   watcher stdout: check: rearm-resurface
+13:30  up 5 days, 4 hrs, 8 users, load averages: 8.27 8.55 7.61

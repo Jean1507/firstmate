@@ -1,0 +1,28 @@
+# round5: stock /bin/bash 3.2.57 repeat, head vs base, 8 concurrent fm-inbox.sh note
+== head-d9a6acb-stock-bash32-run1 bash=/bin/bash k=8 wall=47.06s
+   exit codes (count rc):    8 0 
+   .wake-queue.seq: 8
+   row seqs: 1 2 3 4 5 6 7 8 
+   distinct row seqs: 8
+   leftover lock/owner entries in state: 0
+== base-ce69740-stock-bash32-run1 bash=/bin/bash k=8 wall=86.90s
+   exit codes (count rc):    8 0 
+   .wake-queue.seq: 8
+   row seqs: 1 2 3 4 5 6 7 8 
+   distinct row seqs: 8
+   leftover lock/owner entries in state: 0
+== head-d9a6acb-stock-bash32-run2 bash=/bin/bash k=8 wall=61.65s
+   exit codes (count rc):    8 0 
+   .wake-queue.seq: 8
+   row seqs: 1 2 3 4 5 6 7 8 
+   distinct row seqs: 8
+   leftover lock/owner entries in state: 1
+     .wake-queue.lock.owner.6rI1DP -> contents: .wake-queue.lock.owner.DwqD5G 
+== base-ce69740-stock-bash32-run2 bash=/bin/bash k=8 wall=51.28s
+   exit codes (count rc):    8 0 
+   .wake-queue.seq: 8
+   row seqs: 1 2 3 4 5 6 7 8 
+   distinct row seqs: 8
+   leftover lock/owner entries in state: 2
+     .wake-queue.lock.owner.BNF9E2 -> contents: .wake-queue.lock.owner.QfB09t 
+     .wake-queue.lock.owner.qKUV5P -> contents: .wake-queue.lock.owner.JXCvaK 

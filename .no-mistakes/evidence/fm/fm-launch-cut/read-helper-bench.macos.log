@@ -1,0 +1,4 @@
+bash 3.2.57   base-85942464  2000x pid-file: 122.685s  50x 54KB-manifest:  3.512s  2000x missing: 177.837s
+bash 3.2.57   head-650e448c  2000x pid-file: 157.054s  50x 54KB-manifest:  3.746s  2000x missing: 123.175s
+bash 5.3.15   base-85942464  2000x pid-file:  0.648s  50x 54KB-manifest:  0.184s  2000x missing:  0.542s
+bash 5.3.15   head-650e448c  2000x pid-file:  0.647s  50x 54KB-manifest: 17.576s  2000x missing:  0.564s

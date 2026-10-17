@@ -1,0 +1,21 @@
+# round5: 8 real fm-inbox.sh note calls started at once on a fresh lab FM_HOME (no .wake-queue.seq), macOS
+== head-d9a6acb-homebrew-bash bash=5.3.15(1)-release k=8 wall=6.88s
+   exit codes (count rc):    8 0 
+   .wake-queue.seq: 8
+   row seqs: 1 2 3 4 5 6 7 8 
+   distinct row seqs: 8
+   leftover lock/owner entries in state: 0
+== head-d9a6acb-stock-bash32 bash=/bin/bash k=8 wall=44.04s
+   exit codes (count rc):    8 0 
+   .wake-queue.seq: 8
+   row seqs: 1 2 3 4 5 6 7 8 
+   distinct row seqs: 8
+   leftover lock/owner entries in state: 2
+     .wake-queue.lock.owner.0hCuHU
+     .wake-queue.lock.owner.HkRDVz
+== base-ce69740-homebrew-bash bash=5.3.15(1)-release k=8 wall=119.31s
+   exit codes (count rc):    8 0 
+   .wake-queue.seq: 8
+   row seqs: 1 2 3 4 5 6 7 8 
+   distinct row seqs: 8
+   leftover lock/owner entries in state: 0

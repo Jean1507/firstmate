@@ -1,0 +1,2 @@
+bash 5.2.37(1)-release tree=head git=2.47.3 tmux=3.5a uid=1000
+fm-watch-triage exit=0 elapsed=839s ok=144 notok=0

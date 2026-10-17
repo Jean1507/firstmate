@@ -1,0 +1,13 @@
+# round5: targeted cases of tests/fm-fork-free-helpers.test.sh on macOS (interpreters /bin/bash 3.2.57 and Homebrew 5.3.15; locales C and UTF-8)
+== head d9a6acb test_fork_free_file_commands_match_and_keep_path_overrides exit=0 elapsed=132s
+ok - fork-free read, readlink, rm, rmdir, ln, mktemp and chmod match the commands and keep PATH and function overrides
+== head d9a6acb test_file_read_and_first_wake_append_survive_set_e exit=0 elapsed=34s
+ok - fm_read_file_to and the first wake append on a fresh state dir survive a set -e caller
+== head d9a6acb test_lock_release_keeps_the_owner_when_the_link_survives exit=0 elapsed=14s
+ok - lock release keeps the owner record while an unlink failure leaves the lock link in place
+== head's test against pre-fix c033d4d lib: test_fork_free_file_commands_match_and_keep_path_overrides exit=1 elapsed=26s
+not ok - fork-free file commands differs under /opt/homebrew/bin/bash (C.UTF-8):
+read ctl-utf8: helper $'\001a\343x' rc=0, cat $'\001a\343\001x' rc=0
+read stdout ctl-utf8: helper $'\001a\343x' rc=0, cat $'\001a\343\001x' rc=0
+read del-utf8: helper $'\177a\303x' rc=0, cat $'\177a\303\001x' rc=0
+read stdout del-utf8: helper $'\177a\303x' rc=0, cat $'\177a\303\001x' rc=0

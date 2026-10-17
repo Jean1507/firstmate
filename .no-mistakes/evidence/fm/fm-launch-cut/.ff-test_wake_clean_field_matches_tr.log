@@ -1,0 +1,1 @@
+test_wake_clean_field_matches_tr [exit=0] ok - wake row fields are cleaned exactly as tr did

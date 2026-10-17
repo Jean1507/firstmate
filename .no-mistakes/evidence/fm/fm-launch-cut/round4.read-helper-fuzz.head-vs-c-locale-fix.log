@@ -1,0 +1,15 @@
+== fuzz in Debian bash 5.2 container (head c033d4d vs scratch fix: 'local LC_ALL=C' in the fork-free branch of fm_read_file_to)
+tree=head bash 5.2.37(1)-release LC_ALL=C route=fork-free uid=1000: 92 inputs, 0 mismatches vs $(cat)
+tree=head bash 5.2.37(1)-release LC_ALL=C.UTF-8 route=fork-free uid=1000: 92 inputs, 106 mismatches vs $(cat)
+tree=head bash 5.2.37(1)-release LC_ALL=en_US.UTF-8 route=fork-free uid=1000: 92 inputs, 94 mismatches vs $(cat)
+tree=fixtry bash 5.2.37(1)-release LC_ALL=C route=fork-free uid=1000: 92 inputs, 0 mismatches vs $(cat)
+tree=fixtry bash 5.2.37(1)-release LC_ALL=C.UTF-8 route=fork-free uid=1000: 92 inputs, 0 mismatches vs $(cat)
+tree=fixtry bash 5.2.37(1)-release LC_ALL=en_US.UTF-8 route=fork-free uid=1000: 92 inputs, 0 mismatches vs $(cat)
+== macOS (head c033d4d vs scratch fix)
+tree=head bash 5.3.15(1)-release LC_ALL=C route=fork-free uid=501: 92 inputs, 0 mismatches vs $(cat)
+tree=head bash 5.3.15(1)-release LC_ALL=en_US.UTF-8 route=fork-free uid=501: 92 inputs, 68 mismatches vs $(cat)
+tree=fixtry bash 5.3.15(1)-release LC_ALL=C route=fork-free uid=501: 92 inputs, 0 mismatches vs $(cat)
+tree=fixtry bash 5.3.15(1)-release LC_ALL=en_US.UTF-8 route=fork-free uid=501: 92 inputs, 0 mismatches vs $(cat)
+== scratch fix restores the caller locale:
+caller LC_ALL=en_US.UTF-8 char-length of e-acute before=1 after=1
+caller LC_ALL=unset char-length of e-acute before=1 after=1

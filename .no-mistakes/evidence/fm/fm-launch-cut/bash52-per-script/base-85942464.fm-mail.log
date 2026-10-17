@@ -1,0 +1,9 @@
+ok - fm-mail: missing required configuration fails cleanly naming the variable
+ok - fm-mail: environment values override the .env file
+ok - fm-mail: status succeeds without network and prints configuration
+ok - fm-mail: --help prints usage for every subcommand
+ok - fm-mail: unknown subcommand prints usage and exits non-zero
+ok - fm-mail: status never prints the password
+ok - fm-mail: send passes body not empty through stdin
+ok - fm-mail: poll propagates errors instead of swallowing them
+not ok - poll must succeed when python3 lists mail: expected exit 0, got 1

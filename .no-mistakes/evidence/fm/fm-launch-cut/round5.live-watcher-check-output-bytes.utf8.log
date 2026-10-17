@@ -1,0 +1,25 @@
+# round5: real bin/fm-watch.sh on fresh lab FM_HOMEs, registered custom check prints bytes 01 61 e3 01 78 (\x01 a \xe3 \x01 x); LC_ALL=en_US.UTF-8, Homebrew bash 5.3.15, macOS
+== head-d9a6acb (/Users/jean/.no-mistakes/worktrees/73d83b691d3f/01M54PFQAC5EP0HSC1PE9Q7MHF) bash=5.3.15(1)-release rc=0 elapsed=21s
+-- check stdout bytes (direct):            01  61  e3  01  78                                            
+
+-- watcher wake line bytes (tail of reason after "bytes.check.sh: "):
+           01  61  e3  01  78  0a                                        
+
+-- watcher stdout (cat -v): check: /var/folders/nd/1l92j86j7cs95prv_m5w_gjw0000gn/T//fm-lab.8ZFY4E/state/bytes.check.sh: ^Aaã^Ax
+-- stderr (first 5 lines):
+tr: Illegal byte sequence
+== prefix-c033d4d (/var/folders/nd/1l92j86j7cs95prv_m5w_gjw0000gn/T/fm-r5.nYke9p/c033) bash=5.3.15(1)-release rc=0 elapsed=20s
+-- check stdout bytes (direct):            01  61  e3  01  78                                            
+
+-- watcher wake line bytes (tail of reason after "bytes.check.sh: "):
+           01  61  e3  78  0a                                            
+
+-- watcher stdout (cat -v): check: /var/folders/nd/1l92j86j7cs95prv_m5w_gjw0000gn/T//fm-lab.LsCMmN/state/bytes.check.sh: ^Aaãx
+-- stderr (first 5 lines):
+tr: Illegal byte sequence
+/var/folders/nd/1l92j86j7cs95prv_m5w_gjw0000gn/T/fm-r5.nYke9p/drivers/check-bytes.sh: line 17: 29687 Alarm clock: 14         env -u NO_MISTAKES_GATE -u FM_GATE_REFUSE_BYPASS -u FM_ROOT_OVERRIDE -u FM_STATE_OVERRIDE -u FM_DATA_OVERRIDE -u FM_CONFIG_OVERRIDE -u FM_PROJECTS_OVERRIDE -u FM_TEST_SEAM -u FM_TEST_NO_LOADABLES LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8 FM_HOME="$LAB" FM_POLL=1 FM_CHECK_INTERVAL=0 perl -e 'alarm 90; exec @ARGV' "$tree/bin/fm-watch.sh" > "$out" 2> "$LAB/watch.err"
+== base-ce69740 (/var/folders/nd/1l92j86j7cs95prv_m5w_gjw0000gn/T/fm-r5.nYke9p/base) bash=5.3.15(1)-release rc=142 elapsed=105s
+-- check stdout bytes (direct):            01  61  e3  01  78                                            
+
+-- watcher wake line bytes (tail of reason after "bytes.check.sh: "):
+-- watcher stdout (cat -v): # note: the base-ce69740 90 s run above hit its alarm before the first check sweep completed (load avg ~6 on this SentinelOne laptop); the rerun with a 300 s budget delivered the wake after 159 s with all 5 bytes.

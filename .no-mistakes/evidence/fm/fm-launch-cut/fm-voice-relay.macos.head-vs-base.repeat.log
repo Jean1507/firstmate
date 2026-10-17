@@ -1,0 +1,4 @@
+head-650e448c run1 exit=0 elapsed=73s :: 
+base-85942464 run1 exit=1 elapsed=51s :: round trip: turn 2 reported first audio at 1.971s, which is not measured from the captain's talk end not ok - the spoken round trip did not hold 
+head-650e448c run2 exit=1 elapsed=52s :: round trip: turn 2 reported first audio at 1.645s, which is not measured from the captain's talk end not ok - the spoken round trip did not hold 
+base-85942464 run2 exit=0 elapsed=69s :: 

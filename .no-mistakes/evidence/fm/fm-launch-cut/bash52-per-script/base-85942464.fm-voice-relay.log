@@ -1,0 +1,5 @@
+ok - wire format round trips and rejects a desynchronised stream
+ok - the relay refuses a desynchronised uplink header instead of waiting for its payload
+ok - the relay reads whose account to use from this home and refuses to guess
+ok - an unconfigured home can still read how to configure the relay
+not ok - note should not need any configuration

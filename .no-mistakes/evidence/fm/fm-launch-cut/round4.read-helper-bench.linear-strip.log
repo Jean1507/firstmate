@@ -1,0 +1,16 @@
+== fm_read_file_to per-read cost: base 85942464 ($(<file)), prev 650e448c (quadratic strip), head c033d4d (last-char strip); eq = output equals $(cat)
+-- macOS Homebrew bash 5.3.15(1)-release LC_ALL=en_US.UTF-8
+base8594:  pid(6B)=0.39ms(eq=yes)  m100(4769B)=0.41ms(eq=yes)  m1000(50629B)=1.22ms(eq=yes)  m3000(158201B)=2.74ms(eq=yes)  m1000nl500(51129B)=1.17ms(eq=yes)  nl5000(5000B)=0.37ms(eq=yes)
+prev650:  pid(6B)=0.35ms(eq=yes)  m100(4769B)=6.90ms(eq=yes)  m1000(50629B)=596.59ms(eq=yes)  m3000(158201B)=6086.83ms(eq=yes)  m1000nl500(51129B)=1716.33ms(eq=yes)  nl5000(5000B)=416.80ms(eq=yes)
+head:  pid(6B)=0.31ms(eq=yes)  m100(4769B)=0.88ms(eq=yes)  m1000(50629B)=3.30ms(eq=yes)  m3000(158201B)=7.18ms(eq=yes)  m1000nl500(51129B)=398.66ms(eq=yes)  nl5000(5000B)=190.08ms(eq=yes)
+cat-launch:  pid=$(cat):148.45ms  m1000=$(cat):139.70ms
+-- macOS Homebrew bash 5.3.15(1)-release LC_ALL=C
+base8594:  pid(6B)=0.30ms(eq=yes)  m100(4769B)=0.46ms(eq=yes)  m1000(50629B)=1.03ms(eq=yes)  m3000(158201B)=2.12ms(eq=yes)  m1000nl500(51129B)=1.34ms(eq=yes)  nl5000(5000B)=0.38ms(eq=yes)
+prev650:  pid(6B)=0.34ms(eq=yes)  m100(4769B)=1.15ms(eq=yes)  m1000(50629B)=38.33ms(eq=yes)  m3000(158201B)=387.55ms(eq=yes)  m1000nl500(51129B)=625.69ms(eq=yes)  nl5000(5000B)=275.79ms(eq=yes)
+head:  pid(6B)=0.48ms(eq=yes)  m100(4769B)=0.57ms(eq=yes)  m1000(50629B)=2.13ms(eq=yes)  m3000(158201B)=5.44ms(eq=yes)  m1000nl500(51129B)=189.06ms(eq=yes)  nl5000(5000B)=98.80ms(eq=yes)
+cat-launch:  pid=$(cat):66.26ms  m1000=$(cat):44.14ms
+-- Debian container bash 5.2 LC_ALL=C.UTF-8
+base8594:  pid(6B)=0.11ms(eq=yes)  m100(4769B)=0.22ms(eq=yes)  m1000(50629B)=1.32ms(eq=yes)  m3000(158201B)=3.46ms(eq=yes)  m1000nl500(51129B)=1.32ms(eq=yes)  nl5000(5000B)=0.09ms(eq=yes)
+prev650:  pid(6B)=0.10ms(eq=yes)  m100(4769B)=3.92ms(eq=yes)  m1000(50629B)=348.78ms(eq=yes)  m3000(158201B)=2876.79ms(eq=yes)  m1000nl500(51129B)=1407.83ms(eq=yes)  nl5000(5000B)=543.35ms(eq=yes)
+head:  pid(6B)=0.09ms(eq=yes)  m100(4769B)=0.41ms(eq=yes)  m1000(50629B)=3.40ms(eq=yes)  m3000(158201B)=10.36ms(eq=yes)  m1000nl500(51129B)=565.57ms(eq=yes)  nl5000(5000B)=424.10ms(eq=yes)
+cat-launch:  pid=$(cat):1.22ms  m1000=$(cat):1.78ms

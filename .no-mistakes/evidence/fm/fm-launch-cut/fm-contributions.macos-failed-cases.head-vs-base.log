@@ -1,0 +1,16 @@
+head-650e448c: 6 cases that failed in the loaded full macOS run -> exit=1 elapsed=499s
+   not ok - watcher did not surface contribution diagnostics: 
+   not ok - watcher did not surface the new contribution signal: 
+   ok - real gh error shapes drive the intended retry decision and keep their error
+   not ok - the seeded PR read failure did not run before the issue
+   ok - eight 3-second PR reads complete fresh within one 20-second poll cycle
+   not ok - third was not refreshed within three consecutive slow polls at 2026-09-16T08:15:00Z
+   not ok - 4 contribution regressions
+base-85942464: 6 cases that failed in the loaded full macOS run -> exit=1 elapsed=416s
+   ok - watcher keeps observer diagnostics separate from contribution wakes
+   not ok - watcher did not surface the new contribution signal: 
+   ok - real gh error shapes drive the intended retry decision and keep their error
+   not ok - the seeded PR read failure did not run before the issue
+   not ok - a 3-second-read PR observation was not fresh within one cycle
+   not ok - slow successful poll did not respect its elapsed budget: 25 seconds
+   not ok - 4 contribution regressions

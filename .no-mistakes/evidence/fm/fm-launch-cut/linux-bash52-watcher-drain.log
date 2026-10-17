@@ -1,0 +1,39 @@
+[15:32:00 head] bash 5.2.15(1)-release, lab /tmp/fm-lab.FcRS1w
+[15:32:00 head] fresh state: no .wake-queue.seq
+[15:32:00 head] fm-inbox.sh note rc=0: queued 1792251120-T5oLlH
+  check the release PR after lunch
+  firstmate will pick this up at its next check.
+[15:32:00 head] wake queue after note: 1792251120|1|check|inbox:1792251120-T5oLlH|check: captain inbox note 1792251120-T5oLlH - check the release PR after lunch
+[15:32:00 head] seq file: 1
+[15:32:02 head] first-sight watcher rc=0: check: rearm-resurface 
+[15:32:03 head] drained rows: check:inbox:1792251120-T5oLlH 
+[15:32:05 head] settle 1: watcher surfaced signal: <LAB>/state/alpha.status <LAB>/state/beta.status <LAB>/state/gamma.status 
+[15:32:21 head] watcher settled: idle and alive for 15 s
+[15:32:23 head] after done append watcher output: signal: <LAB>/state/beta.status 
+[15:32:24 head] final drain:
+    1792251143	9	signal	beta.status	signal: <LAB>/state/beta.status
+    wake annotation: latest wake-EVENT observed at drain, not current state: beta.status: done: beta finished, PR #12 ready
+    STATUS OUTCOME BACKSTOP (newest captain-facing task event has no covering branch outcome):
+    beta done: beta finished, PR #12 ready
+    WAKE_ACK_REQUIRED: after handling completes run bin/fm-wake-drain.sh --ack-through 9 --recovery-generation 2660.1792251143.71n2Aj
+[15:32:24 head] lock entries left: 0 ()
+
+[15:32:24 base] bash 5.2.15(1)-release, lab /tmp/fm-lab.72V1lw
+[15:32:24 base] fresh state: no .wake-queue.seq
+[15:32:24 base] fm-inbox.sh note rc=0: queued 1792251144-Q2QArA
+  check the release PR after lunch
+  firstmate will pick this up at its next check.
+[15:32:24 base] wake queue after note: 1792251144|1|check|inbox:1792251144-Q2QArA|check: captain inbox note 1792251144-Q2QArA - check the release PR after lunch
+[15:32:24 base] seq file: 1
+[15:32:26 base] first-sight watcher rc=0: check: rearm-resurface 
+[15:32:27 base] drained rows: check:inbox:1792251144-Q2QArA 
+[15:32:29 base] settle 1: watcher surfaced signal: <LAB>/state/alpha.status <LAB>/state/beta.status <LAB>/state/gamma.status 
+[15:32:46 base] watcher settled: idle and alive for 15 s
+[15:32:48 base] after done append watcher output: signal: <LAB>/state/beta.status 
+[15:32:48 base] final drain:
+    1792251167	9	signal	beta.status	signal: <LAB>/state/beta.status
+    wake annotation: latest wake-EVENT observed at drain, not current state: beta.status: done: beta finished, PR #12 ready
+    STATUS OUTCOME BACKSTOP (newest captain-facing task event has no covering branch outcome):
+    beta done: beta finished, PR #12 ready
+    WAKE_ACK_REQUIRED: after handling completes run bin/fm-wake-drain.sh --ack-through 9 --recovery-generation 10875.1792251167.BHiIIf
+[15:32:48 base] lock entries left: 0 ()

@@ -1,0 +1,40 @@
+[09:12:34 head] bash on PATH: 5.3.15(1)-release
+[09:13:34 head] settled in 59 s (first sight of 6 logs, drains, two idle cycles)
+[09:13:59 head] steady state: 6 idle cycles in 20924 ms -> mean cycle 3487 ms = 2487 ms of work + 1000 ms poll sleep
+[09:14:05 head] done-line latency: watcher exited rc=0 5652 ms after the append, reporting: signal: <LAB>/state/task-3.status 
+[09:14:30 head] drain of that wake took 24978 ms; output:
+    1792253644	14	signal	task-3.status	signal: <LAB>/state/task-3.status
+    wake annotation: latest wake-EVENT observed at drain, not current state: task-3.status: done: finished task-3.status, PR ready
+    STATUS OUTCOME BACKSTOP (newest captain-facing task event has no covering branch outcome):
+    task-3 done: finished task-3.status, PR ready
+    WAKE_ACK_REQUIRED: after handling completes run bin/fm-wake-drain.sh --ack-through 14 --recovery-generation 65771.1792253644.u51xOU
+[09:14:34 base] bash on PATH: 5.3.15(1)-release
+[09:25:07 base] settled in 633 s (first sight of 6 logs, drains, two idle cycles)
+[09:38:02 base] steady state: 6 idle cycles in 700762 ms -> mean cycle 116793 ms = 115793 ms of work + 1000 ms poll sleep
+[09:40:05 base] done-line latency: watcher exited rc=0 121880 ms after the append, reporting: signal: <LAB>/state/task-3.status 
+[09:44:06 base] drain of that wake took 240711 ms; output:
+    1792255183	14	signal	task-3.status	signal: <LAB>/state/task-3.status
+    wake annotation: latest wake-EVENT observed at drain, not current state: task-3.status: done: finished task-3.status, PR ready
+    STATUS OUTCOME BACKSTOP (newest captain-facing task event has no covering branch outcome):
+    task-3 done: finished task-3.status, PR ready
+    WAKE_ACK_REQUIRED: after handling completes run bin/fm-wake-drain.sh --ack-through 14 --recovery-generation 73734.1792255180.fyNfUC
+[09:44:24 head-rerun] bash on PATH: 5.3.15(1)-release
+[09:45:36 head-rerun] settled in 72 s (first sight of 6 logs, drains, two idle cycles)
+[09:46:07 head-rerun] steady state: 6 idle cycles in 27027 ms -> mean cycle 4504 ms = 3504 ms of work + 1000 ms poll sleep
+[09:46:15 head-rerun] done-line latency: watcher exited rc=0 7435 ms after the append, reporting: signal: <LAB>/state/task-3.status 
+[09:46:47 head-rerun] drain of that wake took 31647 ms; output:
+    1792255574	14	signal	task-3.status	signal: <LAB>/state/task-3.status
+    wake annotation: latest wake-EVENT observed at drain, not current state: task-3.status: done: finished task-3.status, PR ready
+    STATUS OUTCOME BACKSTOP (newest captain-facing task event has no covering branch outcome):
+    task-3 done: finished task-3.status, PR ready
+    WAKE_ACK_REQUIRED: after handling completes run bin/fm-wake-drain.sh --ack-through 14 --recovery-generation 55195.1792255573.5xRwPT
+[09:46:51 head-bash3.2] bash on PATH: 3.2.57(1)-release
+[09:49:51 head-bash3.2] settled in 179 s (first sight of 6 logs, drains, two idle cycles)
+[09:51:26 head-bash3.2] steady state: 6 idle cycles in 81637 ms -> mean cycle 13606 ms = 12606 ms of work + 1000 ms poll sleep
+[09:52:21 head-bash3.2] done-line latency: watcher exited rc=0 53170 ms after the append, reporting: signal: <LAB>/state/task-3.status 
+[09:54:07 head-bash3.2] drain of that wake took 105317 ms; output:
+    1792255918	14	signal	task-3.status	signal: <LAB>/state/task-3.status
+    wake annotation: latest wake-EVENT observed at drain, not current state: task-3.status: done: finished task-3.status, PR ready
+    STATUS OUTCOME BACKSTOP (newest captain-facing task event has no covering branch outcome):
+    task-3 done: finished task-3.status, PR ready
+    WAKE_ACK_REQUIRED: after handling completes run bin/fm-wake-drain.sh --ack-through 14 --recovery-generation 23599.1792255914.SBmEui

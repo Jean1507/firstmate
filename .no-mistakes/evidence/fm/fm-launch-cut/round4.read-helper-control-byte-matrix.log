@@ -1,0 +1,26 @@
+== control-byte matrix: fm_read_file_to vs $(cat) (macOS)
+-- tree head
+bash 3.2.57(1)-release LC_ALL=C route=cat-fallback: 18 match; differ: none
+bash 3.2.57(1)-release LC_ALL=en_US.UTF-8 route=cat-fallback: 18 match; differ: none
+bash 5.3.15(1)-release LC_ALL=C route=fork-free: 18 match; differ: none
+bash 5.3.15(1)-release LC_ALL=en_US.UTF-8 route=fork-free: 18 match; differ: none
+-- tree prev650
+bash 3.2.57(1)-release LC_ALL=C route=cat-fallback: 18 match; differ: none
+bash 3.2.57(1)-release LC_ALL=en_US.UTF-8 route=cat-fallback: 18 match; differ: none
+bash 5.3.15(1)-release LC_ALL=C route=fork-free: 18 match; differ: none
+bash 5.3.15(1)-release LC_ALL=en_US.UTF-8 route=fork-free: 18 match; differ: none
+-- tree base8594
+bash 3.2.57(1)-release LC_ALL=C route=cat-fallback: 18 match; differ: none
+bash 3.2.57(1)-release LC_ALL=en_US.UTF-8 route=cat-fallback: 18 match; differ: none
+bash 5.3.15(1)-release LC_ALL=C route=fork-free: 18 match; differ: none
+bash 5.3.15(1)-release LC_ALL=en_US.UTF-8 route=fork-free: 18 match; differ: none
+== control-byte matrix (Debian container)
+-- tree head
+bash 5.2.37(1)-release LC_ALL=C route=fork-free: 18 match; differ: none
+bash 5.2.37(1)-release LC_ALL=C.UTF-8 route=fork-free: 18 match; differ: none
+-- tree prev650
+bash 5.2.37(1)-release LC_ALL=C route=fork-free: 18 match; differ: none
+bash 5.2.37(1)-release LC_ALL=C.UTF-8 route=fork-free: 18 match; differ: none
+-- tree base8594
+bash 5.2.37(1)-release LC_ALL=C route=fork-free: 18 match; differ: none
+bash 5.2.37(1)-release LC_ALL=C.UTF-8 route=fork-free: 18 match; differ: none

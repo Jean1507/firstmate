@@ -1,0 +1,204 @@
+== fm_read_file_to / fm_read_file differential fuzz vs $(cat), head c033d4d, macOS
+bash 3.2.57(1)-release LC_ALL=C route=cat-fallback uid=501: 92 inputs, 0 mismatches vs $(cat)
+   exit=0
+bash 3.2.57(1)-release LC_ALL=en_US.UTF-8 route=cat-fallback uid=501: 92 inputs, 0 mismatches vs $(cat)
+   exit=0
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+bash 5.3.15(1)-release LC_ALL=C route=fork-free uid=501: 92 inputs, 0 mismatches vs $(cat)
+   exit=0
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+MISMATCH rand1: helper rc=0 len=1749, cat rc=0 len=1750
+MISMATCH fm_read_file rand1
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+MISMATCH rand10: helper rc=0 len=2594, cat rc=0 len=2599
+MISMATCH fm_read_file rand10
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+MISMATCH rand11: helper rc=0 len=3149, cat rc=0 len=3154
+MISMATCH fm_read_file rand11
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+MISMATCH rand13: helper rc=0 len=626, cat rc=0 len=627
+MISMATCH fm_read_file rand13
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+MISMATCH rand15: helper rc=0 len=3804, cat rc=0 len=3806
+MISMATCH fm_read_file rand15
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+MISMATCH rand17: helper rc=0 len=2845, cat rc=0 len=2848
+MISMATCH fm_read_file rand17
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+MISMATCH rand19: helper rc=0 len=2903, cat rc=0 len=2906
+MISMATCH fm_read_file rand19
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+MISMATCH rand2: helper rc=0 len=2596, cat rc=0 len=2597
+MISMATCH fm_read_file rand2
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+MISMATCH rand21: helper rc=0 len=3553, cat rc=0 len=3555
+MISMATCH fm_read_file rand21
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+MISMATCH rand22: helper rc=0 len=2491, cat rc=0 len=2492
+MISMATCH fm_read_file rand22
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+MISMATCH rand23: helper rc=0 len=1753, cat rc=0 len=1754
+MISMATCH fm_read_file rand23
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+MISMATCH rand25: helper rc=0 len=1750, cat rc=0 len=1751
+MISMATCH fm_read_file rand25
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+MISMATCH rand27: helper rc=0 len=3454, cat rc=0 len=3457
+MISMATCH fm_read_file rand27
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+MISMATCH rand28: helper rc=0 len=3784, cat rc=0 len=3786
+MISMATCH fm_read_file rand28
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+MISMATCH rand29: helper rc=0 len=3215, cat rc=0 len=3216
+MISMATCH fm_read_file rand29
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+MISMATCH rand3: helper rc=0 len=3687, cat rc=0 len=3690
+MISMATCH fm_read_file rand3
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+MISMATCH rand31: helper rc=0 len=2623, cat rc=0 len=2626
+MISMATCH fm_read_file rand31
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+MISMATCH rand32: helper rc=0 len=3488, cat rc=0 len=3491
+MISMATCH fm_read_file rand32
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+MISMATCH rand33: helper rc=0 len=3494, cat rc=0 len=3495
+MISMATCH fm_read_file rand33
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+MISMATCH rand34: helper rc=0 len=2677, cat rc=0 len=2680
+MISMATCH fm_read_file rand34
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+MISMATCH rand35: helper rc=0 len=3513, cat rc=0 len=3519
+MISMATCH fm_read_file rand35
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+MISMATCH rand36: helper rc=0 len=3040, cat rc=0 len=3044
+MISMATCH fm_read_file rand36
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+MISMATCH rand37: helper rc=0 len=1836, cat rc=0 len=1839
+MISMATCH fm_read_file rand37
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+MISMATCH rand39: helper rc=0 len=3592, cat rc=0 len=3596
+MISMATCH fm_read_file rand39
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+MISMATCH rand4: helper rc=0 len=3438, cat rc=0 len=3440
+MISMATCH fm_read_file rand4
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+MISMATCH rand43: helper rc=0 len=3566, cat rc=0 len=3567
+MISMATCH fm_read_file rand43
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+MISMATCH rand45: helper rc=0 len=3561, cat rc=0 len=3562
+MISMATCH fm_read_file rand45
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+MISMATCH rand46: helper rc=0 len=3314, cat rc=0 len=3316
+MISMATCH fm_read_file rand46
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+MISMATCH rand47: helper rc=0 len=2273, cat rc=0 len=2279
+MISMATCH fm_read_file rand47
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+MISMATCH rand49: helper rc=0 len=2359, cat rc=0 len=2362
+MISMATCH fm_read_file rand49
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+MISMATCH rand50: helper rc=0 len=1212, cat rc=0 len=1216
+MISMATCH fm_read_file rand50
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+MISMATCH rand55: helper rc=0 len=399, cat rc=0 len=402
+MISMATCH fm_read_file rand55
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+MISMATCH rand56: helper rc=0 len=2335, cat rc=0 len=2342
+MISMATCH fm_read_file rand56
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+MISMATCH rand57: helper rc=0 len=568, cat rc=0 len=569
+MISMATCH fm_read_file rand57
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+MISMATCH rand60: helper rc=0 len=1699, cat rc=0 len=1701
+MISMATCH fm_read_file rand60
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+MISMATCH rand7: helper rc=0 len=2780, cat rc=0 len=2786
+MISMATCH fm_read_file rand7
+/tmp/fm-r4/tools/read-fuzz.sh: line 50: warning: command substitution: ignored null byte in input
+MISMATCH rand8: helper rc=0 len=2401, cat rc=0 len=2403
+MISMATCH fm_read_file rand8
+bash 5.3.15(1)-release LC_ALL=en_US.UTF-8 route=fork-free uid=501: 92 inputs, 74 mismatches vs $(cat)
+   exit=1

@@ -1,0 +1,6 @@
+head run1 exit=1 elapsed=47s :: not ok - a mixed authoritative-and-churn batch was not absorbed: 
+head run2 exit=0 elapsed=21s :: ok - a batch may satisfy positive evidence independently per task
+head run3 exit=0 elapsed=32s :: ok - a batch may satisfy positive evidence independently per task
+base run1 exit=0 elapsed=26s :: ok - a batch may satisfy positive evidence independently per task
+base run2 exit=0 elapsed=25s :: ok - a batch may satisfy positive evidence independently per task
+base run3 exit=0 elapsed=29s :: ok - a batch may satisfy positive evidence independently per task

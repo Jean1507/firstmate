@@ -1,0 +1,15 @@
+== seam on (test) env: FM_TEST_SEAM=1 FM_TEST_WATCH_CYCLES=1
+   watcher alive after ~12s: yes
+   distinct beacon mtimes observed (sampled every 0.1s): 55
+   .test-watch-cycles: present, 24 cycle tops recorded (........................)
+   watcher output (first 3 lines): 
+== production (no FM_TEST_SEAM) env: FM_TEST_WATCH_CYCLES=1
+   watcher alive after ~12s: yes
+   distinct beacon mtimes observed (sampled every 0.1s): 45
+   .test-watch-cycles: ABSENT
+   watcher output (first 3 lines): 
+== seam on, cycles flag unset env: FM_TEST_SEAM=1
+   watcher alive after ~12s: yes
+   distinct beacon mtimes observed (sampled every 0.1s): 41
+   .test-watch-cycles: ABSENT
+   watcher output (first 3 lines): 

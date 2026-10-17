@@ -1,0 +1,96 @@
+jean-dev-3 GNU bash, version 5.2.21(1)-release (x86_64-pc-linux-gnu)
+head650 snapshot sha256 (must equal 650e448c worktree):
+8c1f4aac65382710595c09aae53ec47f75c305ef0e9be36612ca6f29a9c14345  bin/fm-path-lib.sh
+2801fe4a034444b863441befcce192802cea789a931ea8d5a95f7c0795c942ad  bin/fm-watch.sh
+1c94a67cf0e1bd46c6b2c825821a3694fb03152d39eab3fb851b72ab0f264725  tests/fm-watch-triage.test.sh
+4c175f0fb4db97ad5e12aa2798f5a3e21f0e98554423960cba334ed92dbaa74a  tests/fm-fork-free-helpers.test.sh
+
+head650 lanes:
+portable-serial-3of9 exit=1
+portable-serial-2of9 exit=1
+portable-parallel-2 exit=1
+portable-parallel-1 exit=1
+portable-serial-8of9 exit=1
+portable-serial-7of9 exit=1
+portable-serial-5of9 exit=1
+portable-serial-9of9 exit=1
+portable-serial-6of9 exit=1
+portable-serial-4of9 exit=1
+portable-serial-1of9 exit=0
+ALLDONE
+
+scripts ended: 244, non-zero: 49
+
+targeted scripts at head650:
+tests/fm-watch-triage.test.sh exit=0 duration_ms=1548714
+tests/fm-mail.test.sh exit=0 duration_ms=13224
+tests/fm-mail-check.test.sh exit=0 duration_ms=8908
+tests/fm-fork-free-helpers.test.sh exit=0 duration_ms=6921
+tests/fm-secondmate-safety.test.sh exit=0 duration_ms=195572
+tests/fm-contributions.test.sh exit=0 duration_ms=215321
+tests/fm-pr-check-security.test.sh exit=0 duration_ms=520599
+tests/fm-voice-relay.test.sh exit=0 duration_ms=29545
+tests/fm-inbox.test.sh exit=0 duration_ms=8662
+
+non-zero at head650 but not in the earlier shard run (head): 0
+non-zero in the earlier run only: tests/fm-documentation-audiences.test.sh tests/fm-lint-workflows.test.sh tests/fm-lint.test.sh tests/fm-pr-check-security.test.sh 
+
+head650 non-zero scripts:
+tests/fm-afk-return.test.sh
+tests/fm-agy-harness.test.sh
+tests/fm-arm-pretool-check.test.sh
+tests/fm-backend-orca.test.sh
+tests/fm-backend-zellij.test.sh
+tests/fm-backend.test.sh
+tests/fm-bearings-board.test.sh
+tests/fm-bearings-snapshot.test.sh
+tests/fm-branch-supervision.test.sh
+tests/fm-busy-adapter-wiring.test.sh
+tests/fm-cd-pretool-check.test.sh
+tests/fm-ci-workflow.test.sh
+tests/fm-claude-trust.test.sh
+tests/fm-commandcode-harness.test.sh
+tests/fm-control-relaunch.test.sh
+tests/fm-control.test.sh
+tests/fm-cursor-primary.test.sh
+tests/fm-extension-binding.test.sh
+tests/fm-fleet-ledger.test.sh
+tests/fm-git-strip-ai-trailers.test.sh
+tests/fm-harness-liveness-drift-live-e2e.test.sh
+tests/fm-live-gate.test.sh
+tests/fm-live-lab-up-mate.test.sh
+tests/fm-live-lab.test.sh
+tests/fm-muse-harness.test.sh
+tests/fm-nm-test-contract.test.sh
+tests/fm-omp-harness.test.sh
+tests/fm-operational-input.test.sh
+tests/fm-pi-branch-extension.test.sh
+tests/fm-pi-primary-types.test.sh
+tests/fm-pi-watch-extension.test.sh
+tests/fm-pr-merge.test.sh
+tests/fm-procevent-quota.test.sh
+tests/fm-procevent.test.sh
+tests/fm-remote-secondmate-lifecycle-e2e.test.sh
+tests/fm-secondmate-busy-contract-live-e2e.test.sh
+tests/fm-secondmate-harness.test.sh
+tests/fm-secondmate-restart.test.sh
+tests/fm-self-repo-role.test.sh
+tests/fm-sessionstart-nudge.test.sh
+tests/fm-spawn-dispatch-profile.test.sh
+tests/fm-spawn-orca-worktree.test.sh
+tests/fm-teardown.test.sh
+tests/fm-test-run.test.sh
+tests/fm-trace-context-spawn.test.sh
+tests/fm-turnend-guard.test.sh
+tests/fm-watch-recovery-loop.test.sh
+tests/fm-watcher-lock.test.sh
+tests/fm-worker-account.test.sh
+
+missing-tool signatures across head650 logs:
+      1 C compiler is required
+      7 node is required
+     10 node: command not found
+      3 ruby is required
+      3 tasks-axi is required
+      1 test needs node
+      5 ‘node’: No such file

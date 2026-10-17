@@ -1,0 +1,79 @@
+== CTLESC hypothesis: a raw / elsewhere + a truncated lead byte followed by 
+-- tree head
+bash 5.3.15(1)-release LC_ALL=C route=fork-free:
+   \xe3\x01x -> same
+   \x01a\xe3\x01x -> same
+   \x7fa\xe3\x01x -> same
+   \x01a\xe3\x7fx -> same
+   \x7fa\xc3\x01x -> same
+   \x01\xc3\x01 -> same
+   caf\xc3\xa9 \x01 then \xe2\x01 -> same
+   \x01 ok \xc3\xa9 valid -> same
+bash 5.3.15(1)-release LC_ALL=en_US.UTF-8 route=fork-free:
+   \xe3\x01x -> same
+   \x01a\xe3\x01x -> DIFF(got  01 61 e3 78 )
+   \x7fa\xe3\x01x -> DIFF(got  7f 61 e3 78 )
+   \x01a\xe3\x7fx -> same
+   \x7fa\xc3\x01x -> DIFF(got  7f 61 c3 78 )
+   \x01\xc3\x01 -> same
+   caf\xc3\xa9 \x01 then \xe2\x01 -> same
+   \x01 ok \xc3\xa9 valid -> same
+-- tree prev650
+bash 5.3.15(1)-release LC_ALL=C route=fork-free:
+   \xe3\x01x -> same
+   \x01a\xe3\x01x -> same
+   \x7fa\xe3\x01x -> same
+   \x01a\xe3\x7fx -> same
+   \x7fa\xc3\x01x -> same
+   \x01\xc3\x01 -> same
+   caf\xc3\xa9 \x01 then \xe2\x01 -> same
+   \x01 ok \xc3\xa9 valid -> same
+bash 5.3.15(1)-release LC_ALL=en_US.UTF-8 route=fork-free:
+   \xe3\x01x -> same
+   \x01a\xe3\x01x -> DIFF(got  01 61 e3 78 )
+   \x7fa\xe3\x01x -> DIFF(got  7f 61 e3 78 )
+   \x01a\xe3\x7fx -> same
+   \x7fa\xc3\x01x -> DIFF(got  7f 61 c3 78 )
+   \x01\xc3\x01 -> same
+   caf\xc3\xa9 \x01 then \xe2\x01 -> same
+   \x01 ok \xc3\xa9 valid -> same
+-- tree base8594
+bash 5.3.15(1)-release LC_ALL=C route=fork-free:
+   \xe3\x01x -> same
+   \x01a\xe3\x01x -> same
+   \x7fa\xe3\x01x -> same
+   \x01a\xe3\x7fx -> same
+   \x7fa\xc3\x01x -> same
+   \x01\xc3\x01 -> same
+   caf\xc3\xa9 \x01 then \xe2\x01 -> same
+   \x01 ok \xc3\xa9 valid -> same
+bash 5.3.15(1)-release LC_ALL=en_US.UTF-8 route=fork-free:
+   \xe3\x01x -> same
+   \x01a\xe3\x01x -> same
+   \x7fa\xe3\x01x -> same
+   \x01a\xe3\x7fx -> same
+   \x7fa\xc3\x01x -> same
+   \x01\xc3\x01 -> same
+   caf\xc3\xa9 \x01 then \xe2\x01 -> same
+   \x01 ok \xc3\xa9 valid -> same
+-- Debian container
+-- tree head
+bash 5.2.37(1)-release LC_ALL=C.UTF-8 route=fork-free:
+   \xe3\x01x -> same
+   \x01a\xe3\x01x -> DIFF(got  01 61 e3 78)
+   \x7fa\xe3\x01x -> DIFF(got  7f 61 e3 78)
+   \x01a\xe3\x7fx -> same
+   \x7fa\xc3\x01x -> DIFF(got  7f 61 c3 78)
+   \x01\xc3\x01 -> DIFF(got  01 c3)
+   caf\xc3\xa9 \x01 then \xe2\x01 -> DIFF(got  63 61 66 c3 a9 20 01 20 74 68 65 6e 20 e2)
+   \x01 ok \xc3\xa9 valid -> same
+-- tree base8594
+bash 5.2.37(1)-release LC_ALL=C.UTF-8 route=fork-free:
+   \xe3\x01x -> same
+   \x01a\xe3\x01x -> same
+   \x7fa\xe3\x01x -> same
+   \x01a\xe3\x7fx -> same
+   \x7fa\xc3\x01x -> same
+   \x01\xc3\x01 -> same
+   caf\xc3\xa9 \x01 then \xe2\x01 -> same
+   \x01 ok \xc3\xa9 valid -> same
