@@ -140,11 +140,16 @@ fm_readlink_to() {  # <output-variable> <path>
 }
 
 fm_read_file_to() {  # <output-variable> <path>
-  local fm_content
+  local fm_content='' fm_chunk='' fm_opened=0
   if _fm_system_tool cat; then
     # A directory opens without error but cat still fails reading it.
     [ ! -d "$2" ] || return 1
-    { fm_content=$(<"$2"); } 2>/dev/null || return 1
+    # The file is opened by a compound command's redirection, not `$(<path)`:
+    # Bash 5.2 exits a set -e caller when `$(<path)` cannot open the file, even
+    # under ||. NUL bytes are dropped and trailing newlines removed, as `$(cat)`.
+    { fm_opened=1; while IFS= read -r -d '' fm_chunk; do fm_content+=$fm_chunk; done; fm_content+=$fm_chunk; } 2>/dev/null <"$2" || :
+    [ "$fm_opened" = 1 ] || return 1
+    while [ "${fm_content%$'\n'}" != "$fm_content" ]; do fm_content=${fm_content%$'\n'}; done
   else
     fm_content=$(cat "$2" 2>/dev/null) || return 1
   fi

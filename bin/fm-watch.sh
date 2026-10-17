@@ -2770,6 +2770,10 @@ while :; do
   # Liveness beacon (watcher_beat). Supervision scripts warn when it goes stale
   # with tasks in flight.
   watcher_beat
+  # Test seam: the beacon also beats mid-cycle, so it marks no cycle boundary.
+  # With FM_TEST_SEAM=1 and FM_TEST_WATCH_CYCLES=1, each cycle top appends one
+  # byte to .test-watch-cycles, so a suite can wait out a whole cycle.
+  [ "${FM_TEST_SEAM:-}" != 1 ] || [ "${FM_TEST_WATCH_CYCLES:-}" != 1 ] || printf . >> "$STATE/.test-watch-cycles"
   # One stat(1) launch refreshes the status-log birth cache this cycle's reads
   # validate against (bin/fm-classify-lib.sh "Birth cache").
   status_stat_cache_refresh "$STATE"/*.status

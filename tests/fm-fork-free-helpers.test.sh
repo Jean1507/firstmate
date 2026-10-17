@@ -455,6 +455,34 @@ SH
   pass "fork-free read, readlink, rm, rmdir, ln, mktemp and chmod match the commands and keep PATH and function overrides"
 }
 
+# Bash 5.2 exits a set -e script when a guarded `$(<path)` cannot open the
+# file, and the first wake append on a fresh state dir reads the absent
+# .wake-queue.seq, so every set -e caller that appended a wake died there.
+test_file_read_and_first_wake_append_survive_set_e() {
+  local script="$TMP_ROOT/set-e-read.sh" dir="$TMP_ROOT/set-e-read"
+  mkdir -p "$dir"
+  cat > "$script" <<'SH'
+set -e
+d=$(mktemp -d "$2/run.XXXXXX")
+FM_STATE_OVERRIDE="$d/state"
+mkdir "$FM_STATE_OVERRIDE" "$d/dir"
+. "$1/bin/fm-wake-lib.sh"
+printf 'one\n\n\n' > "$d/trailing"
+: > "$d/empty"
+for f in missing empty trailing dir; do
+  want=$(cat "$d/$f" 2>/dev/null) && wrc=0 || wrc=$?
+  got=; fm_read_file_to got "$d/$f" && grc=0 || grc=$?
+  [ "$got:$grc" = "$want:$wrc" ] || printf 'read %s under set -e: helper %q rc=%s, cat %q rc=%s\n' "$f" "$got" "$grc" "$want" "$wrc"
+done
+fm_wake_append signal crew.status 'working: first'
+fm_wake_append signal crew.status 'working: second'
+seq=$(cat "$FM_STATE_OVERRIDE/.wake-queue.seq")
+[ "$seq" = 2 ] || printf 'two wake appends on a fresh state dir left sequence %q\n' "$seq"
+SH
+  run_everywhere "set -e file read and first wake append" "$script" "$dir"
+  pass "fm_read_file_to and the first wake append on a fresh state dir survive a set -e caller"
+}
+
 test_pending_reply_record_reads_match_the_pipelines() {
   local script="$TMP_ROOT/pending-reply.sh" dir="$TMP_ROOT/pending-reply"
   mkdir -p "$dir/status"
@@ -542,6 +570,7 @@ else
   test_status_stat_helpers_match_the_per_field_stat_reads
   test_status_stat_cache_serves_unchanged_files_and_rereads_changed_ones
   test_fork_free_file_commands_match_and_keep_path_overrides
+  test_file_read_and_first_wake_append_survive_set_e
   test_wake_clean_field_matches_tr
   test_pending_reply_record_reads_match_the_pipelines
   test_lock_release_keeps_the_owner_when_the_link_survives
