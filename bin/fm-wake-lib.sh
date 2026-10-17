@@ -107,8 +107,18 @@ fm_pid_identity() {
   printf '%s\n' "$out" | sed 's/^[[:space:]]*//'
 }
 
+# Epoch seconds of <path>'s own mtime (lstat). BSD `stat -f` and GNU `stat -c`
+# are chosen by platform, never tried as a fallback pair: GNU `stat -f` is
+# filesystem stat and prints a partial dump before failing. On Darwin the bash
+# `stat` builtin (fm_lstat_to, bin/fm-path-lib.sh) reads it without a launch.
 fm_path_mtime() {
   if [ "$_FM_UNAME" = Darwin ]; then
+    if fm_loadable_ready stat; then
+      local -A fm_mtime_st=()
+      fm_lstat_to fm_mtime_st "$1" || return 1
+      printf '%s\n' "${fm_mtime_st[mtime]}"
+      return 0
+    fi
     /usr/bin/stat -f %m "$1" 2>/dev/null
   else
     stat -c %Y "$1" 2>/dev/null
@@ -563,7 +573,6 @@ fm_lock_claim() {
     return 1
   fi
   fm_read_file_to back "$ownerdir/pid" || back=''
-
   if [ "$back" != "$mypid" ]; then
     fm_lock_discard_owner "$ownerdir"
     return 1
@@ -1385,7 +1394,7 @@ fm_lock_release() {
     fm_lock_discard_owner "$ownerdir"
     return 0
   fi
-  fm_read_file_to pid "$lockdir/pid" || pid=
+  fm_read_file_to pid "$lockdir/pid" || pid=''
   [ "$pid" = "$current" ] || return 0
   fm_lock_clean_known_files "$lockdir"
   rmdir "$lockdir" 2>/dev/null || true

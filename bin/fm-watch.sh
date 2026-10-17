@@ -254,29 +254,18 @@ WATCHER_DOWNTIME_MARKER="$STATE/.watcher-down"
 # or starting the loop. Running it as a script executes the runtime exactly as
 # before, byte-for-byte.
 
-# Portable stat. macOS (BSD) stat uses `-f <fmt>`; Linux (GNU) stat uses `-c <fmt>`.
-# Do NOT use the `stat -f <fmt> ... || stat -c <fmt> ...` fallback form: on Linux
-# `stat -f` is *filesystem* stat and writes a partial filesystem dump ("File: ...",
-# "Blocks: ...") to stdout before failing, so the fallback's correct output gets
-# appended to that garbage. Arithmetic under `set -u` then aborts on the stray
-# token (e.g. the word "File" read as an unset variable), which silently kills the
-# watcher mid-cycle. Detect the platform once and pick the right form.
-# On Darwin, call /usr/bin/stat rather than PATH-resolved stat so GNU coreutils
-# cannot shadow the BSD `-f` syntax.
-if [ "$(uname)" = Darwin ]; then
-  stat_mtime() { /usr/bin/stat -f %m "$1" 2>/dev/null; }        # epoch seconds of mtime
-else
-  stat_mtime() { stat -c %Y "$1" 2>/dev/null; }
-fi
+# Epoch seconds of a path's mtime; fm_path_mtime (bin/fm-wake-lib.sh) owns the
+# platform choice.
+stat_mtime() { fm_path_mtime "$1"; }
 # bin/fm-classify-lib.sh owns status reported-state signatures and presentation
 # markers, while bin/fm-wake-lib.sh owns their wake-facing routing, the legacy
 # turn-ended signature, annotation staleness checks, and guarded bookkeeping writes.
 
 POLL=${FM_POLL:-15}                   # seconds between cycles
-# The liveness beacon is touched once per cycle, immediately before the
-# terminal wait below (event_wait_or_sleep) as well as at the top of the next
-# one, so a healthy cycle's beacon can legitimately age up to POLL seconds
-# between touches. fm_poll_derived_grace (bin/fm-wake-lib.sh, already sourced
+# The liveness beacon is touched at the top of each cycle and before each long
+# phase (watcher_beat), the last shortly before the terminal wait below
+# (event_wait_or_sleep), so a healthy cycle's beacon can legitimately age up to
+# POLL seconds between touches. fm_poll_derived_grace (bin/fm-wake-lib.sh, already sourced
 # transitively above) is the single owner of the max(300, poll+60)
 # derivation - see docs/turnend-guard.md "Guard grace and the poll cadence".
 # This recomputes the library default above now that the real configured
