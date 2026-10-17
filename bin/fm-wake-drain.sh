@@ -793,6 +793,9 @@ print_status_presentation() {  # [<deduped-raw-rows>]
     fi
     return 1
   fi
+  # One stat(1) launch refreshes the status-log birth cache every presentation
+  # read below validates against (bin/fm-classify-lib.sh "Birth cache").
+  status_stat_cache_refresh "$STATE"/*.status
   snapshot=$(status_presentation_snapshot "$STATE") || {
     printf 'STATUS PRESENTATION INCOMPLETE: status snapshot could not be read.\n'
     rc=1

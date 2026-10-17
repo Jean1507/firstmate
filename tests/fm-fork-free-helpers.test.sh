@@ -225,6 +225,240 @@ SH
   pass "classify stat helpers resolve the kernel name once per process"
 }
 
+# Status-file fixtures covering every object kind a status path can hold.
+make_status_fixtures() {  # <dir>
+  local dir=$1
+  mkdir -p "$dir"
+  printf 'working: one\nneeds-decision [key=a]: two\n' > "$dir/full.status"
+  : > "$dir/empty.status"
+  printf 'sticky\n' > "$dir/sticky.status"; chmod 1644 "$dir/sticky.status"
+  printf 'setuid\n' > "$dir/setuid.status"; chmod 4755 "$dir/setuid.status"
+  printf 'hidden\n' > "$dir/unreadable.status"; chmod 000 "$dir/unreadable.status"
+  ln -s full.status "$dir/link.status"
+  ln -s missing-target "$dir/dangling.status"
+  mkdir -p "$dir/dir.status"
+  mkfifo "$dir/fifo.status" 2>/dev/null || true
+}
+
+# The reference below is the per-field stat(1) reading these helpers replaced:
+# three launches for the identity, one each for size, mtime and path state, and
+# od | tr for the signature encoding. Every helper must agree with it on every
+# fixture, with and without the bash `stat` builtin, and when the one-launch
+# format is unavailable (forced here by an unparseable format).
+test_status_stat_helpers_match_the_per_field_stat_reads() {
+  local script="$TMP_ROOT/status-stat.sh" dir="$TMP_ROOT/status-stat"
+  make_status_fixtures "$dir"
+  cat > "$script" <<'SH'
+. "$1/bin/fm-classify-lib.sh"
+[ "${3:-}" != legacy-format ] || _FM_STATUS_STAT_FORMAT='%d'
+ref_ident() {
+  local f=$1 epoch birth ident
+  if [ "$(uname -s)" = Darwin ]; then
+    ident=$(LC_ALL=C /usr/bin/stat -f '%d:%i' "$f" 2>/dev/null) || return 1
+    epoch=$(LC_ALL=C /usr/bin/stat -f '%B' "$f" 2>/dev/null) || epoch=0
+    if [ "$epoch" != 0 ]; then birth=$(LC_ALL=C /usr/bin/stat -f '%FB' "$f" 2>/dev/null) || birth=''; else birth=''; fi
+  else
+    ident=$(LC_ALL=C stat -c '%d:%i' "$f" 2>/dev/null) || return 1
+    epoch=$(LC_ALL=C stat -c '%W' "$f" 2>/dev/null) || epoch=0
+    if [ "$epoch" != 0 ]; then birth=$(LC_ALL=C stat -c '%w' "$f" 2>/dev/null) || birth=''; else birth=''; fi
+  fi
+  case "$ident$birth" in *$'\t'*|*$'\n'*|'') return 1 ;; esac
+  if [ -n "$birth" ]; then printf 'strong:%s:%s' "$ident" "$birth"; else printf 'weak:%s' "$ident"; fi
+}
+ref_field() {  # <darwin-format> <gnu-format> <file>
+  if [ "$(uname -s)" = Darwin ]; then LC_ALL=C /usr/bin/stat -f "$1" "$3" 2>/dev/null
+  else LC_ALL=C stat -c "$2" "$3" 2>/dev/null; fi
+}
+ref_signature() {
+  local f=$1 size ident path_state link_target=- access kind
+  path_state=$(ref_field '%HT:%p' '%F:%f' "$f") || path_state=stat-error
+  if [ -L "$f" ]; then
+    link_target=$(readlink "$f" 2>/dev/null) || link_target=readlink-error
+    kind=symlink
+  elif [ ! -e "$f" ]; then kind=absent
+  elif [ ! -f "$f" ]; then kind=nonregular
+  elif [ -r "$f" ]; then kind=readable
+  else kind=unreadable
+  fi
+  size=$(ref_field '%z' '%s' "$f") || size='size-error'
+  size=${size//[[:space:]]/}
+  case "$size" in ''|*[!0-9]*) size='size-error' ;; esac
+  ident=$(ref_ident "$f") || ident=identity-error
+  [ -n "$ident" ] || ident=identity-error
+  if [ -r "$f" ]; then access=readable; else access=unreadable; fi
+  printf 'r1:%s' "$(printf '%s\0%s\0%s\0%s\0%s\0%s' "$size" "$ident" "$path_state" "$link_target" "$access" "$kind" \
+    | LC_ALL=C od -An -v -tx1 | tr -d ' \n')"
+}
+compare() {  # <label> <helper-output> <helper-rc> <reference-output> <reference-rc>
+  [ "$2:$3" = "$4:$5" ] || printf '%s: helper %q rc=%s, reference %q rc=%s\n' "$1" "$2" "$3" "$4" "$5"
+}
+status_stat_cache_refresh "$2"/*.status "$2/missing.status"
+for f in "$2"/*.status "$2/missing.status"; do
+  got=$(_fm_open_decisions_file_ident "$f"); grc=$?
+  want=$(ref_ident "$f"); wrc=$?
+  compare "identity ${f##*/}" "$got" "$grc" "$want" "$wrc"
+  got=$(_fm_status_file_size "$f"); grc=$?
+  want=$(ref_field '%z' '%s' "$f"); wrc=$?
+  compare "size ${f##*/}" "$got" "$grc" "$want" "$wrc"
+  got=$(_fm_status_file_mtime "$f"); grc=$?
+  want=$(ref_field '%m' '%Y' "$f"); wrc=$?
+  compare "mtime ${f##*/}" "$got" "$grc" "$want" "$wrc"
+  got=$(status_observed_signature "$f"); grc=$?
+  want=$(ref_signature "$f"); wrc=$?
+  compare "signature ${f##*/}" "$got" "$grc" "$want" "$wrc"
+done
+SH
+  run_everywhere "status stat helpers" "$script" "$dir"
+  FM_BASH_LOADABLES=off run_everywhere "status stat helpers without builtins" "$script" "$dir"
+  run_everywhere "status stat helpers on the per-field fallback" "$script" "$dir" legacy-format
+  chmod 600 "$dir/unreadable.status"
+  pass "status identity, size, mtime and signature match the per-field stat reads on every path kind and fallback"
+}
+
+# The birth cache only pays off when a primed, unchanged file is read with no
+# stat(1) launch, and it is only safe when every change to the path forces a
+# fresh read. External reads are counted by wrapping the one helper that
+# launches stat(1).
+test_status_stat_cache_serves_unchanged_files_and_rereads_changed_ones() {
+  local script="$TMP_ROOT/stat-cache.sh" dir="$TMP_ROOT/stat-cache" out
+  mkdir -p "$dir"
+  printf 'working: a\n' > "$dir/a.status"
+  printf 'working: b\n' > "$dir/b.status"
+  printf 'working: c\n' > "$dir/c.status"
+  # Cached records need a ctime more than a second before the refresh.
+  sleep 2.2
+  cat > "$script" <<'SH'
+. "$1/bin/fm-classify-lib.sh"
+d=$2
+if [ "$_FM_STATUS_STAT_BUILTIN" != loaded ]; then
+  printf 'skip: no bash stat builtin\n'
+  exit 0
+fi
+eval "_fm_counted_$(declare -f _fm_status_stat_external)"
+_fm_status_stat_external() { printf 'x' >> "$d/.external"; _fm_counted__fm_status_stat_external "$@"; }
+external() { local n=0; [ ! -e "$d/.external" ] || n=$(wc -c < "$d/.external"); : > "$d/.external"; printf '%s' "$((n))"; }
+ref() { LC_ALL=C /usr/bin/stat -f 'strong:%d:%i:%FB' "$1"; }
+check() {  # <label> <file> <expected-external-reads>
+  local got want n
+  got=$(_fm_open_decisions_file_ident "$2"); want=$(ref "$2")
+  [ "$got" = "$want" ] || printf '%s: identity %q, want %q\n' "$1" "$got" "$want"
+  status_observed_signature "$2" >/dev/null
+  n=$(external)
+  [ "$n" = "$3" ] || printf '%s: %s stat(1) reads, want %s\n' "$1" "$n" "$3"
+}
+: > "$d/.external"
+status_stat_cache_refresh "$d"/*.status
+n=$(external); [ "$n" = 0 ] || printf 'refresh used the per-file reader %s times\n' "$n"
+check "unchanged a" "$d/a.status" 0
+check "unchanged b" "$d/b.status" 0
+printf 'working: more\n' >> "$d/a.status"
+check "appended a" "$d/a.status" 2
+chmod 600 "$d/b.status"
+got=$(status_observed_signature "$d/b.status")
+_FM_STATUS_STAT_CACHE_PATHS=(); _FM_STATUS_STAT_CACHE_RECORDS=()
+want=$(status_observed_signature "$d/b.status")
+[ "$got" = "$want" ] || printf 'chmod b: signature kept the cached path state\n'
+external >/dev/null
+status_stat_cache_refresh "$d"/*.status
+printf 'working: replaced\n' > "$d/c.new"; mv -f "$d/c.new" "$d/c.status"
+check "replaced c" "$d/c.status" 2
+printf 'working: fresh\n' > "$d/new.status"
+status_stat_cache_refresh "$d"/*.status
+check "created in the refresh second" "$d/new.status" 2
+SH
+  out=$("${BASH:-bash}" "$script" "$ROOT" "$dir" 2>&1) || fail "stat cache script failed: $out"
+  case "$out" in
+    'skip: no bash stat builtin')
+      printf 'skip: no bash stat builtin; the birth cache is exercised only where bash ships its stat loadable\n'
+      return 0
+      ;;
+  esac
+  [ -z "$out" ] || fail "stat cache:"$'\n'"$out"
+  pass "the birth cache serves unchanged status files with no stat(1) launch and rereads every changed one"
+}
+
+# Each fork-free file stand-in must leave the same result and status as the
+# command it replaces, and must run a command placed first on PATH instead of
+# its fork-free route, so tests and callers that interpose their own tool keep
+# that seam.
+test_fork_free_file_commands_match_and_keep_path_overrides() {
+  local script="$TMP_ROOT/file-commands.sh" dir="$TMP_ROOT/file-commands" shim="$TMP_ROOT/file-shim" log="$TMP_ROOT/file-shim.log"
+  mkdir -p "$dir/d" "$shim"
+  printf 'one\n\n\n' > "$dir/trailing"
+  : > "$dir/empty"
+  printf 'x' > "$dir/plain"
+  printf 'no' > "$dir/unreadable"; chmod 000 "$dir/unreadable"
+  ln -s /abs/target "$dir/abs-link"
+  ln -s rel/target "$dir/rel-link"
+  ln -s plain "$dir/file-link"
+  for tool in cat readlink rm; do
+    cat > "$shim/$tool" <<SH
+#!/bin/sh
+printf '%s\n' "$tool" >> "$log"
+exec $(command -v "$tool") "\$@"
+SH
+    chmod +x "$shim/$tool"
+  done
+  cat > "$script" <<'SH'
+. "$1/bin/fm-path-lib.sh"
+d=$2
+for f in trailing empty plain unreadable missing d abs-link; do
+  want=$(cat "$d/$f" 2>/dev/null); wrc=$?
+  got=; fm_read_file_to got "$d/$f"; grc=$?
+  [ "$got:$grc" = "$want:$wrc" ] || printf 'read %s: helper %q rc=%s, cat %q rc=%s\n' "$f" "$got" "$grc" "$want" "$wrc"
+  got=$(fm_read_file "$d/$f"); grc=$?
+  [ "$got:$grc" = "$want:$wrc" ] || printf 'read stdout %s: helper %q rc=%s, cat %q rc=%s\n' "$f" "$got" "$grc" "$want" "$wrc"
+done
+for f in abs-link rel-link file-link plain missing d; do
+  want=$(readlink "$d/$f" 2>/dev/null); wrc=$?
+  got=; fm_readlink_to got "$d/$f" 2>/dev/null; grc=$?
+  [ "$got:$grc" = "$want:$wrc" ] || printf 'readlink %s: helper %q rc=%s, readlink %q rc=%s\n' "$f" "$got" "$grc" "$want" "$wrc"
+done
+mkdir -p "$d/ops"
+owner=$(fm_loadable_run mktemp -d "$d/ops/lock.owner.XXXXXX") || printf 'mktemp -d failed\n'
+case "$owner" in "$d/ops/lock.owner."??????) ;; *) printf 'mktemp -d named %q\n' "$owner" ;; esac
+[ -d "$owner" ] || printf 'mktemp -d created no directory\n'
+fm_loadable_run ln -s "$owner" "$d/ops/lock" || printf 'ln -s failed\n'
+[ "$(readlink "$d/ops/lock")" = "$owner" ] || printf 'ln -s pointed elsewhere\n'
+fm_loadable_run ln -s "$owner" "$d/ops/lock" 2>/dev/null
+[ -L "$owner/${owner##*/}" ] || printf 'ln -s through an existing directory link did not link inside it, as ln does\n'
+f=$(fm_loadable_run mktemp "$d/ops/marker.tmp.XXXXXX") || printf 'mktemp failed\n'
+fm_loadable_run chmod 0600 "$f" || printf 'chmod failed\n'
+[ "$(ls -l "$f" | cut -c1-10)" = '-rw-------' ] || printf 'chmod 0600 left %s\n' "$(ls -l "$f" | cut -c1-10)"
+fm_loadable_run rm -f -- "$f" "$d/ops/never-there" || printf 'rm -f failed on a missing operand\n'
+[ ! -e "$f" ] || printf 'rm -f left the file\n'
+fm_loadable_run rm -f "$owner/${owner##*/}" "$d/ops/lock"
+fm_loadable_run rmdir "$owner" || printf 'rmdir failed\n'
+[ ! -e "$owner" ] && [ ! -L "$d/ops/lock" ] || printf 'rm/rmdir left lock state behind\n'
+: > "$4"
+PATH="$3:$PATH"
+fm_read_file_to got "$d/plain"; fm_readlink_to got "$d/abs-link"; fm_loadable_run rm -f "$d/ops/none"
+[ "$(sort "$4" | tr '\n' ' ')" = 'cat readlink rm ' ] || printf 'PATH override not honored: ran %q\n' "$(sort "$4" | tr '\n' ' ')"
+rm -rf "$d/ops"
+SH
+  run_everywhere "fork-free file commands" "$script" "$dir" "$shim" "$log"
+  FM_BASH_LOADABLES=off run_everywhere "fork-free file commands without builtins" "$script" "$dir" "$shim" "$log"
+  chmod 600 "$dir/unreadable"
+  pass "fork-free read, readlink, rm, rmdir, ln, mktemp and chmod match the commands and keep PATH overrides"
+}
+
+test_wake_clean_field_matches_tr() {
+  local script="$TMP_ROOT/clean-field.sh" cases="$TMP_ROOT/clean-field-cases"
+  printf '%s\0' '' plain $'a\tb' $'x\r\ny\n' $'caf\xc3\xa9\tz\n\n' $'\xff\t\xfe\n' $'\n\n' > "$cases"
+  cat > "$script" <<'SH'
+. "$1/bin/fm-wake-lib.sh"
+while IFS= read -r -d '' t; do
+  want=$(printf '%s' "$t" | LC_ALL=C tr '\t\r\n' '   ')
+  fm_wake_clean_field_to got "$t"
+  [ "$got" = "$want" ] || printf 'clean %q: helper %q, tr %q\n' "$t" "$got" "$want"
+  got=$(printf '%s' "$t" | fm_wake_clean_field)
+  [ "$got" = "$want" ] || printf 'clean filter %q: helper %q, tr %q\n' "$t" "$got" "$want"
+done < "$2"
+SH
+  run_everywhere "wake clean field" "$script" "$cases"
+  pass "wake row fields are cleaned exactly as tr did"
+}
+
 if [ -n "${FM_TEST_ONLY:-}" ]; then
   "$FM_TEST_ONLY"
 else
@@ -234,4 +468,8 @@ else
   test_recovery_marker_read_accepts_exactly_one_newline
   test_window_to_task_matches_the_meta_pipeline
   test_classify_stat_helpers_read_the_kernel_name_once
+  test_status_stat_helpers_match_the_per_field_stat_reads
+  test_status_stat_cache_serves_unchanged_files_and_rereads_changed_ones
+  test_fork_free_file_commands_match_and_keep_path_overrides
+  test_wake_clean_field_matches_tr
 fi
