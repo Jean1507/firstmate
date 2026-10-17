@@ -197,6 +197,10 @@ case " $* " in
   *" state "*)
     [ "${FM_TEST_GH_FAIL:-0}" = 0 ] || exit 1
     [ -z "${FM_TEST_GH_STATE_STARTED:-}" ] || : > "$FM_TEST_GH_STATE_STARTED"
+    while [ -n "${FM_TEST_GH_STATE_HOLD:-}" ] && [ -e "$FM_TEST_GH_STATE_HOLD" ] \
+      && [ "$SECONDS" -lt "${FM_TEST_STUB_MAX_BLOCK_SECONDS:-120}" ]; do
+      sleep 0.01
+    done
     [ "${FM_TEST_GH_SLEEP:-0}" = 0 ] || sleep "$FM_TEST_GH_SLEEP"
     printf '%s\n' "${FM_TEST_GH_STATE:-OPEN}"
     ;;
@@ -3179,8 +3183,12 @@ test_teardown_cannot_race_authority_consumption() {
     || fail "teardown race: could not arm the merge poll"
   queue_merge "$dir" "$url"
   archive_away_record "$dir"
+  # The merged-state poll stays open until the test removes poll-held, so the
+  # concurrent teardown always meets the active poll transaction. The watcher's
+  # hang guard is not charged for that hold.
+  : > "$dir/poll-held"
   FM_TEST_GH_STATE_STARTED="$dir/poll-started" FM_TEST_GH_STATE=MERGED \
-    FM_TEST_GH_SLEEP=0.5 FM_TEST_CHECK_TIMEOUT=3 \
+    FM_TEST_GH_STATE_HOLD="$dir/poll-held" FM_TEST_WATCH_BOUND_PAUSE="$dir/poll-held" \
     run_watcher_bounded "$dir/home" "$dir/fakebin" \
       > "$dir/watch.out" 2> "$dir/watch.err" &
   watcher_pid=$!
@@ -3189,6 +3197,7 @@ test_teardown_cannot_race_authority_consumption() {
     sleep 0.01
     i=$((i + 1))
     if [ "$i" -ge 500 ]; then
+      rm -f "$dir/poll-held"
       kill "$watcher_pid" 2>/dev/null || true
       wait "$watcher_pid" 2>/dev/null || true
       fail "teardown race: watcher did not begin its validated poll"
@@ -3202,6 +3211,7 @@ test_teardown_cannot_race_authority_consumption() {
   [ "$rc" -ne 0 ] || fail "teardown race: cleanup crossed the active poll transaction"
   [ -f "$state/task-a.merge-authority" ] \
     || fail "teardown race: refused cleanup removed persisted authority"
+  rm -f "$dir/poll-held"
   rc=0
   wait "$watcher_pid" || rc=$?
   [ "$rc" -eq 0 ] || fail "teardown race: watcher failed with $rc: $(cat "$dir/watch.err")"
