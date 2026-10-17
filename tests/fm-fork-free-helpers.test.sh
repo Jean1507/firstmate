@@ -449,6 +449,38 @@ SH
   pass "fork-free read, readlink, rm, rmdir, ln, mktemp and chmod match the commands and keep PATH and function overrides"
 }
 
+test_pending_reply_record_reads_match_the_pipelines() {
+  local script="$TMP_ROOT/pending-reply.sh" dir="$TMP_ROOT/pending-reply"
+  mkdir -p "$dir/status"
+  printf 'phase=a\ntask_id=t1\nphase=b=c\nempty=\n delivered_epoch=1\ndelivered_epoch=2\nphase_x=no\nlast=unterminated' > "$dir/record"
+  printf 'x\r\nphase=crlf\r\n' > "$dir/crlf"
+  printf 'one\n' > "$dir/status/a.status"
+  ln -s a.status "$dir/status/link.status"
+  printf 'two\n' > "$dir/status/b.status"; chmod 000 "$dir/status/b.status"
+  cat > "$script" <<'SH'
+. "$1/bin/fm-pending-reply-lib.sh"
+d=$2
+for rec in record crlf missing status; do
+  for key in phase task_id empty delivered_epoch last phase_x absent; do
+    want=$(grep "^${key}=" "$d/$rec" 2>/dev/null | tail -1 | cut -d= -f2- || true; printf .)
+    got=$(fm_pending_reply_get "$d/$rec" "$key"; printf .)
+    [ "$got" = "$want" ] || printf 'get %s %s: helper %q, pipeline %q\n' "$rec" "$key" "$got" "$want"
+  done
+done
+for f in "$d"/status/*.status "$d/status/missing.status" "$d/record"; do
+  if [ ! -f "$f" ]; then want=missing
+  elif [ "$(uname -s)" = Darwin ]; then want=$(LC_ALL=C /usr/bin/stat -f '%d:%i:%z:%m:%c' "$f" 2>/dev/null || printf 'unreadable')
+  else want=$(LC_ALL=C stat -c '%d:%i:%s:%Y:%Z' "$f" 2>/dev/null || printf 'unreadable'); fi
+  got=$(fm_pending_reply_file_signature "$f")
+  [ "$got" = "$want" ] || printf 'signature %s: helper %q, stat %q\n' "${f##*/}" "$got" "$want"
+done
+SH
+  run_everywhere "pending-reply record reads" "$script" "$dir"
+  FM_BASH_LOADABLES=off run_everywhere "pending-reply record reads without builtins" "$script" "$dir"
+  chmod 600 "$dir/status/b.status"
+  pass "pending-reply field reads and file signatures match the grep/tail/cut and stat pipelines"
+}
+
 test_wake_clean_field_matches_tr() {
   local script="$TMP_ROOT/clean-field.sh" cases="$TMP_ROOT/clean-field-cases"
   printf '%s\0' '' plain $'a\tb' $'x\r\ny\n' $'caf\xc3\xa9\tz\n\n' $'\xff\t\xfe\n' $'\n\n' > "$cases"
@@ -479,4 +511,5 @@ else
   test_status_stat_cache_serves_unchanged_files_and_rereads_changed_ones
   test_fork_free_file_commands_match_and_keep_path_overrides
   test_wake_clean_field_matches_tr
+  test_pending_reply_record_reads_match_the_pipelines
 fi
