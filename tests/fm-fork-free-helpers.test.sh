@@ -309,7 +309,7 @@ for f in "$2"/*.status "$2/missing.status"; do
 done
 SH
   run_everywhere "status stat helpers" "$script" "$dir"
-  FM_BASH_LOADABLES=off run_everywhere "status stat helpers without builtins" "$script" "$dir"
+  FM_TEST_NO_LOADABLES=1 run_everywhere "status stat helpers without builtins" "$script" "$dir"
   run_everywhere "status stat helpers on the per-field fallback" "$script" "$dir" legacy-format
   chmod 600 "$dir/unreadable.status"
   pass "status identity, size, mtime and signature match the per-field stat reads on every path kind and fallback"
@@ -444,7 +444,7 @@ IFS= read -r ran < "$shim_log" || ran=
 rm -rf "$d/ops"
 SH
   run_everywhere "fork-free file commands" "$script" "$dir" "$shim" "$log"
-  FM_BASH_LOADABLES=off run_everywhere "fork-free file commands without builtins" "$script" "$dir" "$shim" "$log"
+  FM_TEST_NO_LOADABLES=1 run_everywhere "fork-free file commands without builtins" "$script" "$dir" "$shim" "$log"
   chmod 600 "$dir/unreadable"
   pass "fork-free read, readlink, rm, rmdir, ln, mktemp and chmod match the commands and keep PATH and function overrides"
 }
@@ -476,7 +476,7 @@ for f in "$d"/status/*.status "$d/status/missing.status" "$d/record"; do
 done
 SH
   run_everywhere "pending-reply record reads" "$script" "$dir"
-  FM_BASH_LOADABLES=off run_everywhere "pending-reply record reads without builtins" "$script" "$dir"
+  FM_TEST_NO_LOADABLES=1 run_everywhere "pending-reply record reads without builtins" "$script" "$dir"
   chmod 600 "$dir/status/b.status"
   pass "pending-reply field reads and file signatures match the grep/tail/cut and stat pipelines"
 }

@@ -1217,10 +1217,9 @@ FM_OPEN_DECISIONS_FOLD_VERSION=9
 #
 # On Darwin, when the running bash ships its own `stat` loadable builtin
 # (fm_lstat_to, bin/fm-path-lib.sh), device, inode, size, mtime, and ctime come
-# from that builtin with no launch. It is checked once at source time, so
-# FM_BASH_LOADABLES=off must be set before sourcing to skip it. The builtin
-# reports no birth time and drops the sticky bit, so the birth fields and the
-# path state come from stat(1) or from the birth cache.
+# from that builtin with no launch. It is checked once at source time. The
+# builtin reports no birth time and drops the sticky bit, so the birth fields
+# and the path state come from stat(1) or from the birth cache.
 #
 # Birth cache: status_stat_cache_refresh reads every named file with one stat(1)
 # launch and keeps a record only when its ctime is more than a second before the

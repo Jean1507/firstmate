@@ -19,7 +19,9 @@
 #       0 when the running bash's own loadable builtin <name> is loaded. Homebrew
 #       bash 5 installs these in <prefix>/lib/bash. A builtin is loaded on first
 #       use and kept disabled, so the name still resolves to the external tool
-#       everywhere else. FM_BASH_LOADABLES=off disables every builtin.
+#       everywhere else. Test seam: FM_TEST_NO_LOADABLES=1 disables every
+#       builtin when FM_TEST_SEAM=1, so a suite can run the external-tool
+#       fallback on a host that has them (tests/lib.sh arms the marker).
 #   fm_loadable_run <rm|rmdir|ln|mktemp|chmod> [args...]
 #       Runs the command through its builtin, re-enabled for that one call, or
 #       through the external tool. Those builtins match the external tools for
@@ -88,7 +90,8 @@ fm_loadable_ready() {  # <name>
     absent) return 1 ;;
   esac
   printf -v "$fm_state_var" '%s' absent
-  [ "${FM_BASH_LOADABLES:-on}" != off ] && [ "${BASH_VERSINFO[0]:-0}" -ge 5 ] || return 1
+  [ "${FM_TEST_SEAM:-}" != 1 ] || [ "${FM_TEST_NO_LOADABLES:-}" != 1 ] || return 1
+  [ "${BASH_VERSINFO[0]:-0}" -ge 5 ] || return 1
   [ "$(type -t "$1")" != builtin ] || return 1
   fm_lib=${BASH%/bin/*}/lib/bash/$1
   [ -f "$fm_lib" ] || return 1
