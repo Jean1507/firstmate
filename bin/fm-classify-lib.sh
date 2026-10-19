@@ -9,9 +9,10 @@
 #
 # Most functions are pure, side-effect-free reads of status files: each takes
 # what it needs as arguments and touches no globals beyond the optional
-# FM_CAPTAIN_RE override. Consumers layer their own dedup/marker state on top (the
-# daemon keeps its escalation-digest seen-markers; the watcher keeps its .seen-*
-# signatures).
+# FM_CAPTAIN_RE override and the in-memory metadata fields and birth cache that
+# "Status-file metadata reads" below describes. Consumers layer their own
+# dedup/marker state on top (the daemon keeps its escalation-digest
+# seen-markers; the watcher keeps its .seen-* signatures).
 # Status-span classification captures one file endpoint and reports every
 # actionable event through that endpoint before the endpoint may be committed.
 # An absent status file is a successful empty span, while an existing status
@@ -59,6 +60,11 @@ _FM_CLASSIFY_UNAME_S=${_FM_UNAME:-$(uname -s 2>/dev/null)}
 # Overridable so tests can stub the run-step/pane verdict without a real worktree
 # or no-mistakes install; absent, it points at the real sibling script.
 FM_CREW_STATE_BIN="${FM_CREW_STATE_BIN:-$_FM_CLASSIFY_LIB_DIR/fm-crew-state.sh}"
+
+# Fork-free dirname and basename for the per-status-file paths below.
+# shellcheck source=bin/fm-path-lib.sh
+# shellcheck disable=SC1091
+. "$_FM_CLASSIFY_LIB_DIR/fm-path-lib.sh"
 
 # fm_run_timed, the shared hard bound the worktree write probe below puts around
 # its one filesystem walk. bin/fm-timeout-lib.sh owns bounded execution for this
@@ -1076,12 +1082,13 @@ EOF
 # nothing. Callers compare the resolved path, never the file name, so a
 # parent-replies.status in any other home shape stays an ordinary task log.
 status_scan_parent_channel_exclude() {  # <state>
-  local state=$1 exclude
+  local state=$1 exclude home
   if ! command -v fm_parent_channel_outbound_status >/dev/null 2>&1; then
     # shellcheck source=bin/fm-parent-channel-lib.sh
     . "$_FM_CLASSIFY_LIB_DIR/fm-parent-channel-lib.sh"
   fi
-  exclude=$(fm_parent_channel_outbound_status "$(dirname "$state")" "$state") || return 0
+  fm_dirname_to home "$state"
+  exclude=$(fm_parent_channel_outbound_status "$home" "$state") || return 0
   printf '%s\n' "$exclude"
 }
 
@@ -1098,7 +1105,7 @@ scan_open_decisions() {  # <state>
   for f in "$state"/*.status; do
     [ -e "$f" ] || continue
     [ "$f" = "$exclude" ] && continue
-    task=$(basename "$f"); task="${task%.status}"
+    fm_basename_to task "$f"; task="${task%.status}"
     open=$(status_open_decisions "$f") || continue
     [ -n "$open" ] || continue
     while IFS= read -r line; do
@@ -1170,8 +1177,8 @@ EOF
 # re-derives from whatever offset actually landed on disk.
 _fm_open_decisions_cursor_path() {  # <status-file>
   local f=$1 dir base
-  dir=$(dirname "$f")
-  base=$(basename "$f")
+  fm_dirname_to dir "$f"
+  fm_basename_to base "$f"
   printf '%s/.%s.open-decisions-cursor' "$dir" "${base%.status}"
 }
 
@@ -1197,14 +1204,169 @@ _fm_open_decisions_cursor_path() {  # <status-file>
 # discarded and rebuilt from byte 0 under the new reading.
 FM_OPEN_DECISIONS_FOLD_VERSION=9
 
+# Status-file metadata reads. The watcher and the drain read the same few status
+# logs many times per pass, and on a host whose endpoint agent inspects every
+# process launch each stat(1) costs 20-350 ms, so one read never launches stat(1)
+# more than once and launches nothing where the platform allows.
+#
+# _fm_status_stat_read sets the _FM_STATUS_STAT_* fields below from one lstat of
+# <file>, the same object stat(1) reports without -L. It returns 1 when the file
+# cannot be stat'ed and 2 when the one-launch stat(1) format is unsupported but
+# the path exists, so each caller then falls back to its original single-field
+# stat(1) read.
+#
+# On Darwin, when the running bash ships its own `stat` loadable builtin
+# (fm_lstat_to, bin/fm-path-lib.sh), device, inode, size, mtime, and ctime come
+# from that builtin with no launch. It is checked once at source time. The
+# builtin reports no birth time and drops the sticky bit, so the birth fields
+# and the path state come from stat(1) or from the birth cache.
+#
+# Birth cache: status_stat_cache_refresh reads every named file with one stat(1)
+# launch and keeps a record only when its ctime is more than a second before the
+# read started. An append, a chmod, a rename over the path, and a delete plus an
+# inode-reusing recreate all set ctime to the change time, so a record whose
+# device, inode, and ctime still match a fresh builtin lstat describes the same
+# unchanged inode and its birth and path-state fields are exact. Size and mtime
+# always come from the fresh lstat. Any mismatch reads stat(1) instead. The
+# argument assumes the wall clock does not step backwards.
+_FM_STATUS_STAT_DEVINO=
+_FM_STATUS_STAT_SIZE=
+_FM_STATUS_STAT_MTIME=
+_FM_STATUS_STAT_CTIME=
+_FM_STATUS_STAT_PATH_STATE=
+_FM_STATUS_STAT_BIRTH_EPOCH=
+_FM_STATUS_STAT_BIRTH=
+_FM_STATUS_STAT_CACHE_PATHS=()
+_FM_STATUS_STAT_CACHE_RECORDS=()
+_FM_STATUS_STAT_BUILTIN=absent
+
+# One stat(1) format for every field: device:inode, size, mtime, ctime, path
+# state, birth epoch, and birth time, separated by "|", which no field contains.
+if [ "$_FM_CLASSIFY_UNAME_S" = Darwin ]; then
+  _FM_STATUS_STAT_FORMAT='%d:%i|%z|%m|%c|%HT:%p|%B|%FB'
+else
+  _FM_STATUS_STAT_FORMAT='%d:%i|%s|%Y|%Z|%F:%f|%W|%w'
+fi
+
+_fm_status_stat_builtin_init() {
+  [ "$_FM_CLASSIFY_UNAME_S" = Darwin ] && fm_loadable_ready stat || return 0
+  local -A _fm_probe=()
+  fm_lstat_to _fm_probe / || return 0
+  case "${_fm_probe[inode]-}" in ''|*[!0-9]*) return 0 ;; esac
+  _FM_STATUS_STAT_BUILTIN=loaded
+}
+_fm_status_stat_builtin_init
+
+# Splits one stat(1) record in _FM_STATUS_STAT_FORMAT into the fields.
+_fm_status_stat_parse() {  # <record>
+  local rec=$1 devino size mtime ctime pstate bepoch birth
+  IFS='|' read -r devino size mtime ctime pstate bepoch birth <<<"$rec" || return 1
+  case "$birth" in *'|'*) return 1 ;; esac
+  case "$size:$mtime:$ctime:$bepoch" in *[!0-9:]*|:*|*::*|*:) return 1 ;; esac
+  [ -n "$devino" ] && [ -n "$pstate" ] && [ -n "$birth" ] || return 1
+  _FM_STATUS_STAT_DEVINO=$devino
+  _FM_STATUS_STAT_SIZE=$size
+  _FM_STATUS_STAT_MTIME=$mtime
+  _FM_STATUS_STAT_CTIME=$ctime
+  _FM_STATUS_STAT_PATH_STATE=$pstate
+  _FM_STATUS_STAT_BIRTH_EPOCH=$bepoch
+  _FM_STATUS_STAT_BIRTH=$birth
+}
+
+_fm_status_stat_external() {  # <file>
+  local out
+  if [ "$_FM_CLASSIFY_UNAME_S" = Darwin ]; then
+    if out=$(LC_ALL=C /usr/bin/stat -f "$_FM_STATUS_STAT_FORMAT" "$1" 2>/dev/null) \
+      && _fm_status_stat_parse "$out"; then
+      return 0
+    fi
+  elif out=$(LC_ALL=C stat -c "$_FM_STATUS_STAT_FORMAT" "$1" 2>/dev/null) \
+    && _fm_status_stat_parse "$out"; then
+    return 0
+  fi
+  if [ -e "$1" ] || [ -L "$1" ]; then return 2; fi
+  return 1
+}
+
+_fm_status_stat_read() {  # <file> <full:0|1>
+  local f=$1 full=$2 i rc c_devino c_ctime c_pstate c_bepoch c_birth
+  if [ "$_FM_STATUS_STAT_BUILTIN" = loaded ]; then
+    local -A _fm_st=()
+    fm_lstat_to _fm_st "$f" || return 1
+    case "${_fm_st[device]:-}:${_fm_st[inode]:-}:${_fm_st[size]:-}:${_fm_st[mtime]:-}:${_fm_st[ctime]:-}" in
+      *[!0-9:]*|:*|*::*|*:) ;;
+      *)
+        _FM_STATUS_STAT_DEVINO=${_fm_st[device]}:${_fm_st[inode]}
+        _FM_STATUS_STAT_SIZE=${_fm_st[size]}
+        _FM_STATUS_STAT_MTIME=${_fm_st[mtime]}
+        _FM_STATUS_STAT_CTIME=${_fm_st[ctime]}
+        [ "$full" = 1 ] || return 0
+        for i in "${!_FM_STATUS_STAT_CACHE_PATHS[@]}"; do
+          [ "${_FM_STATUS_STAT_CACHE_PATHS[$i]}" = "$f" ] || continue
+          IFS='|' read -r c_devino _ _ c_ctime c_pstate c_bepoch c_birth \
+            <<<"${_FM_STATUS_STAT_CACHE_RECORDS[$i]}" || break
+          if [ "$c_devino" = "$_FM_STATUS_STAT_DEVINO" ] && [ "$c_ctime" = "$_FM_STATUS_STAT_CTIME" ]; then
+            _FM_STATUS_STAT_PATH_STATE=$c_pstate
+            _FM_STATUS_STAT_BIRTH_EPOCH=$c_bepoch
+            _FM_STATUS_STAT_BIRTH=$c_birth
+            return 0
+          fi
+          break
+        done
+        ;;
+    esac
+  fi
+  _fm_status_stat_external "$f"
+}
+
+# Refreshes the birth cache for the named files with one stat(1) launch. A no-op
+# without the builtin, which is the only reader that can validate a record.
+status_stat_cache_refresh() {  # <file>...
+  local start line name rec i
+  _FM_STATUS_STAT_CACHE_PATHS=()
+  _FM_STATUS_STAT_CACHE_RECORDS=()
+  [ "$_FM_STATUS_STAT_BUILTIN" = loaded ] && [ "$#" -gt 0 ] || return 0
+  printf -v start '%(%s)T' -1
+  i=0
+  while IFS= read -r line; do
+    name=${line#*|*|*|*|*|*|*|}
+    rec=${line%"|$name"}
+    [ "$rec" != "$line" ] || continue
+    _fm_status_stat_parse "$rec" || continue
+    [ "$_FM_STATUS_STAT_CTIME" -lt "$((start - 1))" ] || continue
+    _FM_STATUS_STAT_CACHE_PATHS[i]=$name
+    _FM_STATUS_STAT_CACHE_RECORDS[i]=$rec
+    i=$((i + 1))
+  done < <(LC_ALL=C /usr/bin/stat -f "$_FM_STATUS_STAT_FORMAT|%N" "$@" 2>/dev/null)
+  return 0
+}
+
+# Prints the identity from the last successful full _fm_status_stat_read.
+_fm_status_stat_ident() {
+  local birth=''
+  [ "$_FM_STATUS_STAT_BIRTH_EPOCH" = 0 ] || birth=$_FM_STATUS_STAT_BIRTH
+  case "$_FM_STATUS_STAT_DEVINO$birth" in *$'\t'*|*$'\n'*|'') return 1 ;; esac
+  if [ -n "$birth" ]; then
+    printf 'strong:%s:%s' "$_FM_STATUS_STAT_DEVINO" "$birth"
+  else
+    printf 'weak:%s' "$_FM_STATUS_STAT_DEVINO"
+  fi
+}
+
 # Portable device:inode identity for the rotation/recreation check below.
 _fm_open_decisions_file_ident() {  # <file> -> strongest available identity
-  local f=$1 epoch birth ident
+  local f=$1 epoch birth ident rc
   if [ -n "${FM_STATUS_IDENTITY_READER:-}" ]; then
     "$FM_STATUS_IDENTITY_READER" "$f"
     return
   fi
-  if [ "$_FM_CLASSIFY_UNAME_S" = Darwin ]; then
+  _fm_status_stat_read "$f" 1 && rc=0 || rc=$?
+  if [ "$rc" -eq 0 ]; then
+    _fm_status_stat_ident
+    return
+  elif [ "$rc" -ne 2 ]; then
+    return 1
+  elif [ "$_FM_CLASSIFY_UNAME_S" = Darwin ]; then
     ident=$(LC_ALL=C /usr/bin/stat -f '%d:%i' "$f" 2>/dev/null) || return 1
     epoch=$(LC_ALL=C /usr/bin/stat -f '%B' "$f" 2>/dev/null) || epoch=0
     if [ "$epoch" != 0 ]; then birth=$(LC_ALL=C /usr/bin/stat -f '%FB' "$f" 2>/dev/null) || birth=''; else birth=''; fi
@@ -1218,12 +1380,17 @@ _fm_open_decisions_file_ident() {  # <file> -> strongest available identity
 }
 
 _fm_status_file_size() {  # <status-file>
-  local f=$1
+  local f=$1 rc
   if [ -n "${FM_STATUS_SIZE_READER:-}" ]; then
     "$FM_STATUS_SIZE_READER" "$f"
     return
   fi
-  if [ "$_FM_CLASSIFY_UNAME_S" = Darwin ]; then
+  _fm_status_stat_read "$f" 0 && rc=0 || rc=$?
+  if [ "$rc" -eq 0 ]; then
+    printf '%s\n' "$_FM_STATUS_STAT_SIZE"
+  elif [ "$rc" -ne 2 ]; then
+    return 1
+  elif [ "$_FM_CLASSIFY_UNAME_S" = Darwin ]; then
     LC_ALL=C /usr/bin/stat -f '%z' "$f" 2>/dev/null
   else
     LC_ALL=C stat -c '%s' "$f" 2>/dev/null
@@ -1231,8 +1398,13 @@ _fm_status_file_size() {  # <status-file>
 }
 
 _fm_status_file_mtime() {  # <status-file>
-  local f=$1
-  if [ "$_FM_CLASSIFY_UNAME_S" = Darwin ]; then
+  local f=$1 rc
+  _fm_status_stat_read "$f" 0 && rc=0 || rc=$?
+  if [ "$rc" -eq 0 ]; then
+    printf '%s\n' "$_FM_STATUS_STAT_MTIME"
+  elif [ "$rc" -ne 2 ]; then
+    return 1
+  elif [ "$_FM_CLASSIFY_UNAME_S" = Darwin ]; then
     LC_ALL=C /usr/bin/stat -f '%m' "$f" 2>/dev/null
   else
     LC_ALL=C stat -c '%Y' "$f" 2>/dev/null
@@ -1278,7 +1450,7 @@ status_open_decisions_incremental() {  # <status-file> [<captured-end-offset>]
   offset=0
   ident=''
   if [ -f "$cf" ] && [ -r "$cf" ] && [ ! -L "$cf" ]; then
-    cursor_data=$(LC_ALL=C command cat "$cf" 2>/dev/null) || cursor_data=''
+    fm_read_file_to cursor_data "$cf" || cursor_data=''
   fi
   if [ -n "${cursor_data:-}" ]; then
       first=${cursor_data%%$'\n'*}
@@ -1347,12 +1519,14 @@ status_open_decisions_incremental() {  # <status-file> [<captured-end-offset>]
   if [ "$offset" -lt "$size" ]; then
     chunk_file="$cf.read.$$"
     _fm_status_read_span "$f" "$offset" "$((size - offset))" > "$chunk_file" 2>/dev/null \
-      || { rm -f "$chunk_file"; printf '%s' "$trusted_open"; return 0; }
-    chunk_size=$(LC_ALL=C wc -c < "$chunk_file" 2>/dev/null) \
-      || { rm -f "$chunk_file"; printf '%s' "$trusted_open"; return 0; }
+      || { fm_loadable_run rm -f "$chunk_file"; printf '%s' "$trusted_open"; return 0; }
+    chunk_size=
+    if _fm_status_stat_read "$chunk_file" 0; then chunk_size=$_FM_STATUS_STAT_SIZE; fi
+    [ -n "$chunk_size" ] || chunk_size=$(LC_ALL=C wc -c < "$chunk_file" 2>/dev/null) \
+      || { fm_loadable_run rm -f "$chunk_file"; printf '%s' "$trusted_open"; return 0; }
     chunk_size=${chunk_size//[[:space:]]/}
     case "$chunk_size" in
-      ''|*[!0-9]*) rm -f "$chunk_file"; printf '%s' "$trusted_open"; return 0 ;;
+      ''|*[!0-9]*) fm_loadable_run rm -f "$chunk_file"; printf '%s' "$trusted_open"; return 0 ;;
     esac
     # Test-only observability seam (off by default, no production behavior
     # change): when set, records exactly how many bytes THIS call folded, so a
@@ -1365,7 +1539,7 @@ status_open_decisions_incremental() {  # <status-file> [<captured-end-offset>]
     while IFS= read -r line || [ -n "$line" ]; do
       open=$(_fm_decision_fold_line "$open" "$line" "$resolve" "$held" "$kind")
     done < "$chunk_file"
-    rm -f "$chunk_file"
+    fm_loadable_run rm -f "$chunk_file"
     offset=$size
     cursor_dirty=1
   fi
@@ -1393,7 +1567,7 @@ scan_open_decisions_incremental() {  # <state>
   for f in "$state"/*.status; do
     [ -e "$f" ] || continue
     [ "$f" = "$exclude" ] && continue
-    task=$(basename "$f"); task="${task%.status}"
+    fm_basename_to task "$f"; task="${task%.status}"
     open=$(status_open_decisions_incremental "$f") || continue
     [ -n "$open" ] || continue
     while IFS= read -r line; do
@@ -1413,7 +1587,7 @@ status_presentation_snapshot() {  # <state>
     [ -e "$f" ] || continue
     [ "$f" = "$exclude" ] && continue
     [ -f "$f" ] && [ -r "$f" ] && [ ! -L "$f" ] || continue
-    task=$(basename "$f"); task="${task%.status}"
+    fm_basename_to task "$f"; task="${task%.status}"
     size=$(_fm_status_file_size "$f") || return 1
     size=${size//[[:space:]]/}
     ident=$(_fm_open_decisions_file_ident "$f") || return 1
@@ -1460,7 +1634,7 @@ status_snapshot_latest_event() {  # <status-file> <captured-endpoint> <captured-
   length=$((endpoint - start))
   scratch="$(_fm_status_span_scratch "$f").latest"
   _fm_status_read_span "$f" "$start" "$length" > "$scratch" 2>/dev/null \
-    || { rm -f "$scratch"; return 1; }
+    || { fm_loadable_run rm -f "$scratch"; return 1; }
   if record=$(LC_ALL=C perl -e '
     my ($path, $start, $skip_first) = @ARGV;
     open my $file, "<", $path or exit 1;
@@ -1474,8 +1648,8 @@ status_snapshot_latest_event() {  # <status-file> <captured-endpoint> <captured-
     }
     exit 1 unless defined $end;
     print "$end\t$latest";
-  ' "$scratch" "$start" "$skip_first"); then :; else rm -f "$scratch"; return 1; fi
-  rm -f "$scratch"
+  ' "$scratch" "$start" "$skip_first"); then :; else fm_loadable_run rm -f "$scratch"; return 1; fi
+  fm_loadable_run rm -f "$scratch"
   event_endpoint=${record%%$'\t'*}
   line=${record#*$'\t'}
   case "$event_endpoint" in ''|*[!0-9]*) return 1 ;; esac
@@ -1504,7 +1678,7 @@ status_presentation_cursor_offset() {  # <status-file>
   manifest="$state/.status-presentation-cursor"
   if [ -e "$manifest" ] || [ -L "$manifest" ]; then
     [ -f "$manifest" ] && [ -r "$manifest" ] && [ ! -L "$manifest" ] || return 1
-    data=$(LC_ALL=C command cat "$manifest" 2>/dev/null) || return 1
+    fm_read_file_to data "$manifest" || return 1
     offset=
     while IFS=$(printf '\t') read -r row_task ident legacy backstop extra; do
       [ -n "$row_task" ] || continue
@@ -1549,7 +1723,7 @@ status_outcome_backstop_cursor_offset() {  # <status-file>
   manifest="$state/.status-presentation-cursor"
   [ -e "$manifest" ] || { printf '0'; return 0; }
   [ -f "$manifest" ] && [ -r "$manifest" ] && [ ! -L "$manifest" ] || return 1
-  data=$(LC_ALL=C command cat "$manifest" 2>/dev/null) || return 1
+  fm_read_file_to data "$manifest" || return 1
   backstop=0
   while IFS=$(printf '\t') read -r row_task ident presented row_backstop extra; do
     [ -n "$row_task" ] || continue
@@ -1574,15 +1748,20 @@ EOF
 }
 
 status_signal_seen_marker_path() {  # <state> <task-id>
-  printf '%s/.seen-%s' "$1" "$(printf '%s.status' "$2" | tr '.' '_')"
+  local fm_task="$2.status"
+  printf '%s/.seen-%s' "$1" "${fm_task//./_}"
 }
 
 status_heartbeat_seen_marker_path() {  # <state> <task-id>
-  printf '%s/.hb-surfaced-%s' "$1" "$(printf '%s' "$2" | tr ':/.' '___')"
+  local fm_task=${2//[:\/.]/_}
+  while [ "${fm_task%$'\n'}" != "$fm_task" ]; do fm_task=${fm_task%$'\n'}; done
+  printf '%s/.hb-surfaced-%s' "$1" "$fm_task"
 }
 
 status_daemon_seen_marker_path() {  # <state> <task-id>
-  printf '%s/.subsuper-seen-status-%s' "$1" "$(printf '%s' "$2" | tr ':/.' '___')"
+  local fm_task=${2//[:\/.]/_}
+  while [ "${fm_task%$'\n'}" != "$fm_task" ]; do fm_task=${fm_task%$'\n'}; done
+  printf '%s/.subsuper-seen-status-%s' "$1" "$fm_task"
 }
 
 _status_presentation_signature_valid() {
@@ -1636,9 +1815,49 @@ _status_observed_path_state() {
   fi
 }
 
+# Hex-encodes the fields joined by NUL bytes, exactly as
+# `printf '%s\0%s...' | od -An -v -tx1 | tr -d ' \n'` would. Printable ASCII is
+# encoded in the shell, which launches nothing; any other byte uses od.
+_status_observed_encode() {  # <field>...
+  local LC_ALL=C field hex out='' sep='' i
+  for field in "$@"; do
+    case "$field" in
+      *[![:print:]]*)
+        local fmt='%s'
+        for ((i = 1; i < $#; i++)); do fmt="$fmt\\0%s"; done
+        # shellcheck disable=SC2059 # The format is built from fixed parts only.
+        printf "$fmt" "$@" | od -An -v -tx1 | tr -d ' \n'
+        return
+        ;;
+    esac
+  done
+  for field in "$@"; do
+    out=$out$sep
+    sep=00
+    for ((i = 0; i < ${#field}; i++)); do
+      printf -v hex '%02x' "'${field:i:1}"
+      out=$out$hex
+    done
+  done
+  printf '%s' "$out"
+}
+
 status_observed_signature() {
-  local f=$1 size=${2-} ident=${3-} path_state link_target=- access kind encoded
-  path_state=$(_status_observed_path_state "$f") || path_state=stat-error
+  local f=$1 size=${2-} ident=${3-} path_state link_target=- access kind encoded rc
+  # One full read serves the path state and, unless the caller supplied them or
+  # a test reader overrides them, the size and identity too.
+  _fm_status_stat_read "$f" 1 && rc=0 || rc=$?
+  case "$rc" in
+    0) path_state=$_FM_STATUS_STAT_PATH_STATE ;;
+    2) path_state=$(_status_observed_path_state "$f") || path_state=stat-error ;;
+    *) path_state=stat-error ;;
+  esac
+  if [ "$rc" -eq 0 ] && [ -z "$size" ] && [ -z "${FM_STATUS_SIZE_READER:-}" ]; then
+    size=$_FM_STATUS_STAT_SIZE
+  fi
+  if [ "$rc" -eq 0 ] && [ -z "$ident" ] && [ -z "${FM_STATUS_IDENTITY_READER:-}" ]; then
+    ident=$(_fm_status_stat_ident) || ident=identity-error
+  fi
   if [ -L "$f" ]; then
     link_target=$(readlink "$f" 2>/dev/null) || link_target=readlink-error
     kind=symlink
@@ -1661,22 +1880,21 @@ status_observed_signature() {
     [ -n "$ident" ] || ident=identity-error
   fi
   if [ -r "$f" ]; then access=readable; else access=unreadable; fi
-  encoded=$(printf '%s\0%s\0%s\0%s\0%s\0%s' \
-    "$size" "$ident" "$path_state" "$link_target" "$access" "$kind" \
-    | LC_ALL=C od -An -v -tx1 | tr -d ' \n') || return 1
+  encoded=$(_status_observed_encode \
+    "$size" "$ident" "$path_state" "$link_target" "$access" "$kind") || return 1
   printf 'r1:%s' "$encoded"
 }
 
 status_presentation_marker_reported_matches() {
   local raw
-  raw=$(cat "$1" 2>/dev/null) || return 1
+  fm_read_file_to raw "$1" || return 1
   status_presentation_marker_parse "$raw" || return 1
   [ "$STATUS_PRESENTATION_REPORTED" = "$2" ]
 }
 
 status_presentation_marker_offset() {
   local raw classified offset ident current
-  raw=$(cat "$1" 2>/dev/null) || { printf '0'; return 0; }
+  fm_read_file_to raw "$1" || { printf '0'; return 0; }
   status_presentation_marker_parse "$raw" || { printf '0'; return 0; }
   classified=$STATUS_PRESENTATION_CLASSIFIED
   [ "$classified" != - ] || { printf '0'; return 0; }
@@ -1689,7 +1907,7 @@ status_presentation_marker_offset() {
 status_presentation_marker_report() {
   local marker=$1 reported=$2 raw classified=-
   _status_presentation_signature_valid "$reported" || return 1
-  if raw=$(cat "$marker" 2>/dev/null) && status_presentation_marker_parse "$raw"; then
+  if fm_read_file_to raw "$marker" && status_presentation_marker_parse "$raw"; then
     classified=$STATUS_PRESENTATION_CLASSIFIED
   fi
   printf 'v2\t%s\t%s' "$reported" "$classified" > "$marker"
@@ -1734,7 +1952,7 @@ status_retire_presentation_task() {  # <state> <task-id>
       return 0
     fi
     if [ -f "$manifest" ] && [ -r "$manifest" ] && [ ! -L "$manifest" ] \
-      && data=$(LC_ALL=C command cat "$manifest" 2>/dev/null); then
+      && fm_read_file_to data "$manifest"; then
       while IFS=$(printf '\t') read -r row_task ident offset backstop extra; do
         [ -n "$row_task" ] || continue
         if [ -n "$extra" ] || [ -z "$ident" ]; then rc=1; break; fi
@@ -1753,7 +1971,7 @@ EOF
   if [ -e "$manifest" ] || [ -L "$manifest" ]; then
     if [ ! -f "$manifest" ] || [ ! -r "$manifest" ] || [ -L "$manifest" ]; then
       rc=1
-    elif ! data=$(LC_ALL=C command cat "$manifest" 2>/dev/null); then
+    elif ! fm_read_file_to data "$manifest"; then
       rc=1
     elif ! : > "$tmp"; then
       rc=1
@@ -1771,7 +1989,7 @@ EOF
 $data
 EOF
       if [ "$rc" -eq 0 ]; then mv -f "$tmp" "$manifest" || rc=1; fi
-      [ "$rc" -eq 0 ] || rm -f "$tmp"
+      [ "$rc" -eq 0 ] || fm_loadable_run rm -f "$tmp"
     fi
   fi
   if [ "$rc" -eq 0 ]; then
@@ -1823,30 +2041,30 @@ status_commit_presentation_snapshot() {  # <state> <snapshot>
   : > "$tmp" || return 1
   while IFS=$(printf '\t') read -r task endpoint ident; do
     [ -n "$task" ] || continue
-    case "$endpoint" in ''|*[!0-9]*) rm -f "$tmp"; return 1 ;; esac
-    [ -n "$ident" ] || { rm -f "$tmp"; return 1; }
+    case "$endpoint" in ''|*[!0-9]*) fm_loadable_run rm -f "$tmp"; return 1 ;; esac
+    [ -n "$ident" ] || { fm_loadable_run rm -f "$tmp"; return 1; }
     f="$state/$task.status"
-    [ -f "$f" ] && [ -r "$f" ] && [ ! -L "$f" ] || { rm -f "$tmp"; return 1; }
-    cur_ident=$(_fm_open_decisions_file_ident "$f") || { rm -f "$tmp"; return 1; }
-    size=$(_fm_status_file_size "$f") || { rm -f "$tmp"; return 1; }
+    [ -f "$f" ] && [ -r "$f" ] && [ ! -L "$f" ] || { fm_loadable_run rm -f "$tmp"; return 1; }
+    cur_ident=$(_fm_open_decisions_file_ident "$f") || { fm_loadable_run rm -f "$tmp"; return 1; }
+    size=$(_fm_status_file_size "$f") || { fm_loadable_run rm -f "$tmp"; return 1; }
     size=${size//[[:space:]]/}
-    case "$size" in ''|*[!0-9]*) rm -f "$tmp"; return 1 ;; esac
+    case "$size" in ''|*[!0-9]*) fm_loadable_run rm -f "$tmp"; return 1 ;; esac
     [ "$cur_ident" = "$ident" ] && [ "$endpoint" -le "$size" ] \
-      || { rm -f "$tmp"; return 1; }
-    backstop=$(status_outcome_backstop_cursor_offset "$f") || { rm -f "$tmp"; return 1; }
+      || { fm_loadable_run rm -f "$tmp"; return 1; }
+    backstop=$(status_outcome_backstop_cursor_offset "$f") || { fm_loadable_run rm -f "$tmp"; return 1; }
     while IFS=$(printf '\t') read -r acknowledged_task acknowledged_endpoint; do
       if [ "$acknowledged_task" = "$task" ]; then backstop=$acknowledged_endpoint; fi
     done <<EOF
 ${STATUS_OUTCOME_BACKSTOP_ACKNOWLEDGED:-}
 EOF
-    case "$backstop" in ''|*[!0-9]*) rm -f "$tmp"; return 1 ;; esac
-    [ "$backstop" -le "$size" ] || { rm -f "$tmp"; return 1; }
+    case "$backstop" in ''|*[!0-9]*) fm_loadable_run rm -f "$tmp"; return 1 ;; esac
+    [ "$backstop" -le "$size" ] || { fm_loadable_run rm -f "$tmp"; return 1; }
     printf '%s\t%s\t%s\t%s\n' "$task" "$ident" "$endpoint" "$backstop" >> "$tmp" \
-      || { rm -f "$tmp"; return 1; }
+      || { fm_loadable_run rm -f "$tmp"; return 1; }
   done <<EOF
 $snapshot
 EOF
-  mv -f "$tmp" "$state/.status-presentation-cursor" || { rm -f "$tmp"; return 1; }
+  mv -f "$tmp" "$state/.status-presentation-cursor" || { fm_loadable_run rm -f "$tmp"; return 1; }
 }
 
 scan_open_decisions_snapshot() {  # <state> <task-and-endpoint-snapshot>
@@ -1900,7 +2118,7 @@ status_open_decisions_cursor_offset() {  # <status-file>
   cf=$(_fm_open_decisions_cursor_path "$f")
   if [ -e "$cf" ] || [ -L "$cf" ]; then
     [ -f "$cf" ] && [ -r "$cf" ] && [ ! -L "$cf" ] || return 1
-    if cursor_data=$(LC_ALL=C command cat "$cf" 2>/dev/null); then
+    if fm_read_file_to cursor_data "$cf"; then
       first=${cursor_data%%$'\n'*}
       case "$first" in
         version=*)
@@ -1981,13 +2199,13 @@ status_new_lines_since_cursor() {  # <status-file> [<captured-end-offset>]
   fi
   [ "$offset" -lt "$size" ] || return 0
   _fm_status_read_span "$f" "$offset" "$((size - offset))" > "$chunk_file" 2>/dev/null \
-    || { rm -f "$chunk_file"; return 1; }
+    || { fm_loadable_run rm -f "$chunk_file"; return 1; }
   while IFS= read -r line || [ -n "$line" ]; do
     case "$line" in
       *[![:space:]]*) printf '%s\n' "$line" || { rc=1; break; } ;;
     esac
   done < "$chunk_file"
-  rm -f "$chunk_file"
+  fm_loadable_run rm -f "$chunk_file"
   return "$rc"
 }
 
@@ -2028,7 +2246,7 @@ scan_unread_surface_lines() {  # <state>
   for f in "$state"/*.status; do
     [ -e "$f" ] || continue
     [ "$f" = "$exclude" ] && continue
-    task=$(basename "$f"); task="${task%.status}"
+    fm_basename_to task "$f"; task="${task%.status}"
     lines=$(status_new_lines_since_cursor "$f") || return 1
     [ -n "$lines" ] || continue
     while IFS= read -r line; do
@@ -2198,8 +2416,8 @@ window_to_task() {
 
 status_home_appends_path() {  # <status-file>
   local f=$1 dir base
-  dir=$(dirname "$f")
-  base=$(basename "$f")
+  fm_dirname_to dir "$f"
+  fm_basename_to base "$f"
   printf '%s/.%s.home-appends' "$dir" "${base%.status}"
 }
 
@@ -2208,7 +2426,7 @@ status_home_appends_ranges() {  # <status-file> -> start<TAB>end lines
   path=$(status_home_appends_path "$f")
   [ -f "$path" ] && [ -r "$path" ] && [ ! -L "$path" ] || return 0
   ident=$(_fm_open_decisions_file_ident "$f") || return 0
-  data=$(LC_ALL=C command cat "$path" 2>/dev/null) || return 0
+  fm_read_file_to data "$path" || return 0
   first=${data%%$'\n'*}
   [ "$first" = v1 ] || return 0
   rest=${data#*$'\n'}
@@ -2285,8 +2503,8 @@ EOF
     body="${body}${start}"$'\t'"${end}"$'\n'
   fi
   tmp="$path.tmp.$$"
-  printf 'v1\nident=%s\n%s' "$ident" "$body" > "$tmp" || { rm -f "$tmp"; return 1; }
-  mv -f "$tmp" "$path" || { rm -f "$tmp"; return 1; }
+  printf 'v1\nident=%s\n%s' "$ident" "$body" > "$tmp" || { fm_loadable_run rm -f "$tmp"; return 1; }
+  mv -f "$tmp" "$path" || { fm_loadable_run rm -f "$tmp"; return 1; }
 }
 
 # Capture the bytes of an append-only status log at or after <start-offset> under
@@ -2384,11 +2602,11 @@ status_span_first_actionable_record() {  # <status-file> <start-offset> [record-
   scratch=$(_fm_status_span_scratch "$f") || return 2
   chunk_file="${scratch}.span"
   _fm_status_read_span "$f" "$start" "$((size - start))" > "$chunk_file" 2>/dev/null \
-    || { rm -f "$chunk_file"; return 2; }
+    || { fm_loadable_run rm -f "$chunk_file"; return 2; }
   cur_ident=$(_fm_open_decisions_file_ident "$f") || {
-    rm -f "$chunk_file"; return 2;
+    fm_loadable_run rm -f "$chunk_file"; return 2;
   }
-  [ "$cur_ident" = "$ident" ] || { rm -f "$chunk_file"; return 2; }
+  [ "$cur_ident" = "$ident" ] || { fm_loadable_run rm -f "$chunk_file"; return 2; }
   # shellcheck disable=SC2094 # The loop and the origin fold below only read the span scratch.
   while IFS= read -r line || [ -n "$line" ]; do
     line_number=$((line_number + 1))
@@ -2444,7 +2662,7 @@ EOF
         ;;
     esac
   done < "$chunk_file"
-  rm -f "$chunk_file"
+  fm_loadable_run rm -f "$chunk_file"
   [ "$failed" -eq 0 ] || return 2
   if [ "$rc" -eq 0 ]; then result="${size}"$'\t'"${ident}"$'\t'"${events}"; else result="${size}"$'\t'"${ident}"; fi
   if [ -n "$output_var" ]; then

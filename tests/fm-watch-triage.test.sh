@@ -70,29 +70,22 @@ wait_live() {
 # machine a short fixed budget can reap a round before the cycle it asserts on
 # ever ran - and then every "no wake, no marker" assertion passes vacuously
 # while every "marker written" assertion fails spuriously.
-# The liveness beacon is touched at the TOP of every poll, so this drops any
-# beacon left by an earlier round, waits for THIS watcher to write a fresh one
-# (some poll's top), then waits for that one to advance (the next poll's top) -
-# and the whole cycle in between is what the caller's assertions describe.
+# The liveness beacon also beats mid-cycle, so its mtime marks no cycle
+# boundary. FM_TEST_WATCH_CYCLES=1 (exported below; a FM_TEST_SEAM seam) makes
+# the watcher append one byte to .test-watch-cycles at the TOP of every poll, so
+# this drops any count left by an earlier round, waits for THIS watcher's next
+# poll top, then for the one after it - and the whole cycle in between is what
+# the caller's assertions describe.
 # 0 if the watcher is still alive after a completed cycle, 1 if it exited.
+export FM_TEST_WATCH_CYCLES=1
 wait_poll_cycle() {  # <state> <pid> [limit-ticks]
-  local state=$1 pid=$2 limit=${3:-300} beat first now i=0
-  beat="$state/.last-watcher-beat"
-  rm -f "$beat"
-  first=""
+  local state=$1 pid=$2 limit=${3:-300} tops seen i=0
+  tops="$state/.test-watch-cycles"
+  rm -f "$tops"
   while [ "$i" -lt "$limit" ]; do
     kill -0 "$pid" 2>/dev/null || return 1
-    first=$(file_mtime "$beat")
-    [ -n "$first" ] && break
-    sleep 0.1
-    i=$((i + 1))
-  done
-  while [ "$i" -lt "$limit" ]; do
-    kill -0 "$pid" 2>/dev/null || return 1
-    now=$(file_mtime "$beat")
-    if [ -n "$now" ] && [ "$now" != "$first" ]; then
-      return 0
-    fi
+    seen=$(cat "$tops" 2>/dev/null || true)
+    [ "${#seen}" -lt 2 ] || return 0
     sleep 0.1
     i=$((i + 1))
   done
@@ -6335,6 +6328,35 @@ test_beacon_stays_fresh_while_absorbing() {
   pass "the liveness beacon stays fresh while the watcher absorbs benign wakes (fm-guard never false-alarms)"
 }
 
+# A long phase inside one cycle must not age the beacon past that phase: the
+# watcher beats again after the signal grace wait, so by the time it absorbs the
+# signal the beacon is younger than the wait it just finished, while a beacon
+# beaten only at the cycle's start is older than that wait. The long poll keeps
+# the next cycle's opening beat out of the measurement.
+test_beacon_beats_again_after_the_signal_grace_wait() {
+  local dir state fakebin out status_file pid beat_mtime now grace=8 i=0
+  dir=$(make_case beacon-grace-phase); state="$dir/state"; fakebin="$dir/fakebin"; out="$dir/watch.out"
+  status_file="$state/task.status"
+  printf 'working: a\n' > "$status_file"
+  export FM_FAKE_CREW_STATE='state: working · source: run-step · validating (running)'
+  watch_bg "$state" "$fakebin" "$out" env FM_SIGNAL_GRACE="$grace" FM_POLL=120
+  pid=$!
+  until grep -Fq 'absorbed benign' "$state/.watch-triage.log" 2>/dev/null; do
+    kill -0 "$pid" 2>/dev/null && [ "$i" -lt 900 ] \
+      || { reap "$pid"; fail "watcher did not absorb the benign signal: $(cat "$out")"; }
+    sleep 0.1
+    i=$((i + 1))
+  done
+  beat_mtime=$(file_mtime "$state/.last-watcher-beat")
+  now=$(date +%s)
+  reap "$pid"
+  unset FM_FAKE_CREW_STATE
+  [ -n "$beat_mtime" ] || fail "watcher beacon missing after the grace wait"
+  [ "$((now - beat_mtime))" -lt "$grace" ] \
+    || fail "beacon was $((now - beat_mtime))s old after the ${grace}s grace wait; the watcher did not beat between phases"
+  pass "the watcher beats again after the signal grace wait, so a long but live cycle keeps its beacon fresh"
+}
+
 # --- afk coherence: the daemon owns triage; the watcher does not double-triage ---
 
 test_afk_signal_records_heartbeat_endpoint() {
@@ -6908,6 +6930,7 @@ test_heartbeat_no_change_absorbed
 test_heartbeat_backstop_surfaces_unsurfaced_status
 test_heartbeat_backstop_surfaces_a_masked_status
 test_beacon_stays_fresh_while_absorbing
+test_beacon_beats_again_after_the_signal_grace_wait
 test_afk_signal_records_heartbeat_endpoint
 test_afk_present_reverts_watcher_to_one_shot
 test_afk_paused_changed_pane_hands_off_plain_stale

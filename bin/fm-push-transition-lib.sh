@@ -5,7 +5,7 @@
 # the whole watcher to obtain handle_push_transition. Its source list is limited
 # to the four production boundaries the transition handler actually calls.
 
-FM_PUSH_TRANSITION_LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+FM_PUSH_TRANSITION_LIB_DIR="$(d=${BASH_SOURCE[0]%/*}; [ "$d" != "${BASH_SOURCE[0]}" ] || d=.; cd "${d:-/}" && pwd)"
 
 # shellcheck source=bin/fm-wake-lib.sh
 . "$FM_PUSH_TRANSITION_LIB_DIR/fm-wake-lib.sh"
@@ -132,13 +132,13 @@ hb_surfaced_offset() {  # <task>
 mark_surfaced() {  # <status-file> <captured-end-offset> <captured-identity>
   local f=$1 task
   case "$f" in *.status) ;; *) return 0 ;; esac
-  task=$(basename "$f"); task="${task%.status}"
+  fm_basename_to task "$f"; task="${task%.status}"
   status_presentation_marker_commit "$(_hb_surfaced_path "$task")" "$f" "$2" "$3"
 }
 
 mark_surface_reported() {  # <status-file> <reported-signature>
   local f=$1 task
-  task=$(basename "$f"); task="${task%.status}"
+  fm_basename_to task "$f"; task="${task%.status}"
   status_presentation_marker_report "$(_hb_surfaced_path "$task")" "$2"
 }
 

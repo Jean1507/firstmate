@@ -107,8 +107,18 @@ fm_pid_identity() {
   printf '%s\n' "$out" | sed 's/^[[:space:]]*//'
 }
 
+# Epoch seconds of <path>'s own mtime (lstat). BSD `stat -f` and GNU `stat -c`
+# are chosen by platform, never tried as a fallback pair: GNU `stat -f` is
+# filesystem stat and prints a partial dump before failing. On Darwin the bash
+# `stat` builtin (fm_lstat_to, bin/fm-path-lib.sh) reads it without a launch.
 fm_path_mtime() {
   if [ "$_FM_UNAME" = Darwin ]; then
+    if fm_loadable_ready stat; then
+      local -A fm_mtime_st=()
+      fm_lstat_to fm_mtime_st "$1" || return 1
+      printf '%s\n' "${fm_mtime_st[mtime]}"
+      return 0
+    fi
     /usr/bin/stat -f %m "$1" 2>/dev/null
   else
     stat -c %Y "$1" 2>/dev/null
@@ -465,7 +475,7 @@ fm_watcher_supervision_verdict() {
 
 fm_lock_clean_known_files() {
   local lockdir=$1
-  rm -f \
+  fm_loadable_run rm -f \
     "$lockdir/pid" \
     "$lockdir/fm-home" \
     "$lockdir/pid-identity" \
@@ -481,7 +491,7 @@ fm_lock_set_role() {
     *) return 1 ;;
   esac
   fm_current_pid current || return 1
-  pid=$(cat "$lockdir/pid" 2>/dev/null || true)
+  fm_read_file_to pid "$lockdir/pid" || pid=''
   [ "$pid" = "$current" ] || return 1
   printf '%s\n' "$role" > "$lockdir/role" 2>/dev/null || return 1
   back=$(cat "$lockdir/role" 2>/dev/null || true)
@@ -503,30 +513,30 @@ fm_lock_abs_path() {
 fm_lock_owner_dir() {
   local lockdir=$1 lock_abs
   lock_abs=$(fm_lock_abs_path "$lockdir") || return 1
-  mktemp -d "${lock_abs}.owner.XXXXXX" 2>/dev/null
+  fm_loadable_run mktemp -d "${lock_abs}.owner.XXXXXX" 2>/dev/null
 }
 
 fm_lock_prepare_owner() {
   local ownerdir=$1 mypid back
   fm_current_pid mypid || return 1
   printf '%s\n' "$mypid" > "$ownerdir/pid" 2>/dev/null || return 1
-  back=$(cat "$ownerdir/pid" 2>/dev/null || true)
+  fm_read_file_to back "$ownerdir/pid" || back=''
   [ "$back" = "$mypid" ]
 }
 
 fm_lock_link_owner() {
-  local lockdir=$1 owner
-  owner=$(readlink "$lockdir" 2>/dev/null) || return 1
+  local lockdir=$1 owner dir
+  fm_readlink_to owner "$lockdir" 2>/dev/null || return 1
   [ -n "$owner" ] || return 1
   case "$owner" in
     /*) printf '%s\n' "$owner" ;;
-    *) printf '%s/%s\n' "$(dirname "$lockdir")" "$owner" ;;
+    *) fm_dirname_to dir "$lockdir"; printf '%s/%s\n' "$dir" "$owner" ;;
   esac
 }
 
 fm_lock_points_to_owner() {
   local lockdir=$1 ownerdir=$2 actual
-  actual=$(readlink "$lockdir" 2>/dev/null) || return 1
+  fm_readlink_to actual "$lockdir" 2>/dev/null || return 1
   [ "$actual" = "$ownerdir" ]
 }
 
@@ -534,7 +544,7 @@ fm_lock_discard_owner() {
   local ownerdir=$1
   [ -n "$ownerdir" ] || return 0
   fm_lock_clean_known_files "$ownerdir"
-  rmdir "$ownerdir" 2>/dev/null || true
+  fm_loadable_run rmdir "$ownerdir" 2>/dev/null || true
 }
 
 fm_lock_remove_stray_owner_link() {
@@ -562,7 +572,7 @@ fm_lock_claim() {
     fm_lock_discard_owner "$ownerdir"
     return 1
   fi
-  back=$(cat "$ownerdir/pid" 2>/dev/null || true)
+  fm_read_file_to back "$ownerdir/pid" || back=''
   if [ "$back" != "$mypid" ]; then
     fm_lock_discard_owner "$ownerdir"
     return 1
@@ -593,7 +603,7 @@ fm_lock_try_create() {
     fm_lock_discard_owner "$ownerdir"
     return 1
   fi
-  if ln -s "$ownerdir" "$lockdir" 2>/dev/null && fm_lock_points_to_owner "$lockdir" "$ownerdir"; then
+  if fm_loadable_run ln -s "$ownerdir" "$lockdir" 2>/dev/null && fm_lock_points_to_owner "$lockdir" "$ownerdir"; then
     if fm_lock_claim "$lockdir" "$ownerdir" "$allowed_steal_owner"; then
       FM_LOCK_OWNER_DIR=$ownerdir
       return 0
@@ -691,18 +701,18 @@ _fm_recovery_marker_write_locked() {
   FM_RECOVERY_MARKER_WRITTEN_TOKEN=
   case "$kind" in handling|downtime) ;; *) return 1 ;; esac
   case "$status" in pending|announced|acked) ;; *) return 1 ;; esac
-  tmp=$(mktemp "${marker}.tmp.XXXXXX") || return 1
+  tmp=$(fm_loadable_run mktemp "${marker}.tmp.XXXXXX") || return 1
   if [ -z "$generation" ]; then
     # Prefer fm_current_pid's output-var form so the pid is not itself a $().
     fm_current_pid pid
-    epoch=$(date +%s)
+    fm_epoch_seconds_to epoch
     generation="${pid}.${epoch}.${tmp##*.}"
   fi
   token="$status:$kind:$generation"
   if ! printf '%s\n' "$token" > "$tmp" \
-    || ! chmod 0600 "$tmp" \
+    || ! fm_loadable_run chmod 0600 "$tmp" \
     || ! _fm_atomic_replace "$tmp" "$marker"; then
-    rm -f -- "$tmp"
+    fm_loadable_run rm -f -- "$tmp"
     return 1
   fi
   FM_RECOVERY_MARKER_WRITTEN_TOKEN=$token
@@ -1377,14 +1387,15 @@ fm_lock_release() {
   if [ -L "$lockdir" ]; then
     ownerdir=$(fm_lock_link_owner "$lockdir" 2>/dev/null || true)
     [ -n "$ownerdir" ] || return 0
-    pid=$(cat "$ownerdir/pid" 2>/dev/null || true)
+    fm_read_file_to pid "$ownerdir/pid" || pid=''
     [ "$pid" = "$current" ] || return 0
     fm_lock_points_to_owner "$lockdir" "$ownerdir" || return 0
-    rm -f "$lockdir" 2>/dev/null || return 0
+    fm_loadable_run rm -f "$lockdir" 2>/dev/null || return 0
+    ! { [ -L "$lockdir" ] && fm_lock_points_to_owner "$lockdir" "$ownerdir"; } || return 0
     fm_lock_discard_owner "$ownerdir"
     return 0
   fi
-  pid=$(cat "$lockdir/pid" 2>/dev/null || true)
+  fm_read_file_to pid "$lockdir/pid" || pid=''
   [ "$pid" = "$current" ] || return 0
   fm_lock_clean_known_files "$lockdir"
   rmdir "$lockdir" 2>/dev/null || true
@@ -2126,8 +2137,16 @@ fm_autoarm_release_abandoned() {  # <state-dir> [grace]
   return 1
 }
 
-fm_wake_clean_field() {
-  LC_ALL=C tr '\t\r\n' '   '
+# A wake row field: each tab, carriage return, and newline byte becomes a space.
+fm_wake_clean_field_to() {  # <output-variable> <text>
+  printf -v "$1" '%s' "${2//[$'\t\r\n']/ }"
+}
+
+fm_wake_clean_field() {  # stdin -> stdout form of fm_wake_clean_field_to
+  local fm_field=''
+  IFS= read -r -d '' fm_field || true
+  fm_wake_clean_field_to fm_field "$fm_field"
+  printf '%s' "$fm_field"
 }
 
 fm_wake_append() {
@@ -2152,16 +2171,16 @@ fm_wake_append_locked() {
     *) printf 'fm_wake_append: invalid wake kind: %s\n' "$kind" >&2; return 2 ;;
   esac
 
-  clean_key=$(printf '%s' "$key" | fm_wake_clean_field)
-  clean_payload=$(printf '%s' "$payload" | fm_wake_clean_field)
-  epoch=$(date +%s)
+  fm_wake_clean_field_to clean_key "$key"
+  fm_wake_clean_field_to clean_payload "$payload"
+  fm_epoch_seconds_to epoch
   seq_file="$STATE/.wake-queue.seq"
   recovery_marker="$STATE/.watcher-down"
   status=0
 
   _fm_recovery_marker_publish "$recovery_marker" downtime "" append || status=$?
   if [ "$status" -eq 0 ]; then
-    seq=$(cat "$seq_file" 2>/dev/null || echo 0)
+    fm_read_file_to seq "$seq_file" || seq=0
     case "$seq" in
       ''|*[!0-9]*) seq=0 ;;
     esac

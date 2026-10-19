@@ -123,7 +123,7 @@
 # the bin/ source prefix so the deliberately undirected lazy sources below
 # still resolve for ShellCheck instead of warning SC1091.
 # shellcheck source=bin/fm-marker-lib.sh
-_FM_PENDING_REPLY_LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd 2>/dev/null)" || _FM_PENDING_REPLY_LIB_DIR="."
+_FM_PENDING_REPLY_LIB_DIR="$(d=${BASH_SOURCE[0]%/*}; [ "$d" != "${BASH_SOURCE[0]}" ] || d=.; cd "${d:-/}" && pwd 2>/dev/null)" || _FM_PENDING_REPLY_LIB_DIR="."
 # shellcheck source=bin/fm-marker-lib.sh
 . "$_FM_PENDING_REPLY_LIB_DIR/fm-marker-lib.sh"
 # shellcheck source=bin/fm-backend.sh
@@ -216,10 +216,18 @@ fm_pending_reply_summarize() {  # <text>
   printf '%s' "$cleaned"
 }
 
+# The value of the record's last <key>= line, printed with a trailing newline,
+# or nothing when no line carries the key. Read in the shell: this runs for
+# every field of every in-flight record on each watcher cycle.
 fm_pending_reply_get() {  # <record-path> <key>
-  local rec=$1 key=$2
+  local rec=$1 key=$2 line value='' found=0
   [ -f "$rec" ] || return 0
-  grep "^${key}=" "$rec" 2>/dev/null | tail -1 | cut -d= -f2- || true
+  {
+    while IFS= read -r line || [ -n "$line" ]; do
+      case "$line" in "$key="*) value=${line#"$key="}; found=1 ;; esac
+    done < "$rec"
+  } 2>/dev/null
+  [ "$found" -eq 0 ] || printf '%s\n' "$value"
 }
 
 fm_pending_reply_sighting_encode() {  # <path> <line-number>
@@ -610,9 +618,15 @@ fm_pending_reply_find_resolve_line() {  # <status-file> <corr_id>
 }
 
 fm_pending_reply_file_signature() {  # <path>
-  local path=$1
+  local path=$1 rc
   [ -f "$path" ] || { printf 'missing'; return 0; }
-  if [ "$(uname -s 2>/dev/null)" = Darwin ]; then
+  _fm_status_stat_read "$path" 0 && rc=0 || rc=$?
+  if [ "$rc" -eq 0 ]; then
+    printf '%s:%s:%s:%s' "$_FM_STATUS_STAT_DEVINO" "$_FM_STATUS_STAT_SIZE" \
+      "$_FM_STATUS_STAT_MTIME" "$_FM_STATUS_STAT_CTIME"
+  elif [ "$rc" -ne 2 ]; then
+    printf 'unreadable'
+  elif [ "$_FM_CLASSIFY_UNAME_S" = Darwin ]; then
     LC_ALL=C /usr/bin/stat -f '%d:%i:%z:%m:%c' "$path" 2>/dev/null || printf 'unreadable'
   else
     LC_ALL=C stat -c '%d:%i:%s:%Y:%Z' "$path" 2>/dev/null || printf 'unreadable'
