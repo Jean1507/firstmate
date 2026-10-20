@@ -1,0 +1,44 @@
+[cleanup-new] provisioned lab session fm-lab-cleanup-new-32931-13431
+[cleanup-new] fixture: 30 token workspaces, 65 journals, 38 live-task metas
+[cleanup-new] busy-f pane now runs a child process (not an idle shell)
+[cleanup-new] restored layout ready; focus on anchor w1	w1:t1
+[cleanup-new] cleanup exit=0 elapsed=118.8s
+    cleanup: warning: herdr session-start projection cleanup: bind-e preserved because its locked candidate snapshot was ambiguous
+    cleanup: warning: herdr session-start projection cleanup: busy-f preserved because its pane is not a provably idle childless shell
+[cleanup-new]   bind-e (bound-mismatch): pane present, journal kept
+[cleanup-new]   busy-f (busy-shell): pane present, journal kept
+[cleanup-new]   dup-c (duplicate): pane present, journal kept
+[cleanup-new]   live-10 (live-task): pane present, journal kept
+[cleanup-new]   live-11 (live-task): pane present, journal kept
+[cleanup-new]   live-12 (live-task): pane present, journal kept
+[cleanup-new]   live-13 (live-task): pane present, journal kept
+[cleanup-new]   live-14 (live-task): pane present, journal kept
+[cleanup-new]   live-15 (live-task): pane present, journal kept
+[cleanup-new]   live-16 (live-task): pane present, journal kept
+[cleanup-new]   live-17 (live-task): pane present, journal kept
+[cleanup-new]   live-18 (live-task): pane present, journal kept
+[cleanup-new]   live-19 (live-task): pane present, journal kept
+[cleanup-new]   live-20 (live-task): pane present, journal kept
+[cleanup-new]   live-21 (live-task): pane present, journal kept
+[cleanup-new]   live-22 (live-task): pane present, journal kept
+[cleanup-new]   live-23 (live-task): pane present, journal kept
+[cleanup-new]   live-24 (live-task): pane present, journal kept
+[cleanup-new]   live-7 (live-task): pane present, journal kept
+[cleanup-new]   live-8 (live-task): pane present, journal kept
+[cleanup-new]   live-9 (live-task): pane present, journal kept
+[cleanup-new]   nojournal-25 (no-journal): pane present, journal none (never had one)
+[cleanup-new]   nojournal-26 (no-journal): pane present, journal none (never had one)
+[cleanup-new]   nojournal-27 (no-journal): pane present, journal none (never had one)
+[cleanup-new]   nojournal-28 (no-journal): pane present, journal none (never had one)
+[cleanup-new]   nojournal-29 (no-journal): pane present, journal none (never had one)
+[cleanup-new]   nojournal-30 (no-journal): pane present, journal none (never had one)
+[cleanup-new]   stale-a (clean-v1): pane closed, journal retired
+[cleanup-new]   stale-b (clean-v2): pane closed, journal retired
+[cleanup-new]   xhome-d (cross-home): pane present, journal kept
+[cleanup-new] closed panes: [stale-a stale-b] expected [stale-a stale-b]
+[cleanup-new] retired journals: [stale-a.herdr-presentation stale-b.herdr-presentation] expected [stale-a.herdr-presentation stale-b.herdr-presentation]
+[cleanup-new] journals before=65 after=63
+[cleanup-new] focus before=[w1	w1:t1] after=[w1	w1:t1] anchor-pane-intact=yes
+[cleanup-new] verdict=pass
+[cleanup-new] lab fm-lab-cleanup-new-32931-13431 torn down (status 0)
+note (added after the run): the six no-journal rows originally printed 'journal retired' because of a driver labelling bug (those workspaces never had a journal); only that wording was changed afterwards, and the driver now prints 'none'. Pane/journal outcomes and timing are as recorded.

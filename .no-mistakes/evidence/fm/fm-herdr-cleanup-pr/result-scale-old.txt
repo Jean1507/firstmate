@@ -1,0 +1,7 @@
+label=cleanup-old
+mode=scale
+elapsed=716.6
+closed=stale-a stale-b
+retired=stale-a.herdr-presentation stale-b.herdr-presentation
+focus_preserved=yes
+verdict=pass
