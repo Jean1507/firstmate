@@ -282,6 +282,153 @@ reset_fixture; : > "$FIXTURE_DIR/race"; assert_preserved "revalidation race"
 reset_fixture; printf '%s\n' "$TAB" > "$FIXTURE_DIR/active-tab"; assert_preserved "active target"
 reset_fixture; : > "$FIXTURE_DIR/focus-refuse"; assert_preserved "focus refusal"
 
+# Scale: many journals and many token-titled workspaces keep the same close and
+# keep outcomes, and the first pass reads each journal once rather than once
+# per workspace.
+SCALE_DIR="$TMP_ROOT/scale"
+SCALE_READS="$TMP_ROOT/scale-reads.log"
+SCALE_JOURNALS=40
+SCALE_WORKSPACES=44
+rm -rf "$SCALE_DIR" "$TMP_ROOT"/*.lock "${FM_STATE_OVERRIDE:?}/"*
+mkdir -p "$SCALE_DIR" "$TMP_ROOT/other-home"
+: > "$LOCK_LOG"; : > "$CLOSE_LOG"; : > "$SCALE_READS"
+
+scale_token() { printf 'Scale%017d' "$1"; }
+scale_write_journal() { # <id> <token> <version> [home] [index]
+  local id=$1 token=$2 version=$3 home=${4:-} i=${5:-}
+  if [ "$version" = 1 ]; then
+    printf 'version=1\ntask_id=%s\nprojection_id=%s\n' "$id" "$token"
+  else
+    printf 'version=2\ntask_id=%s\nprojection_id=%s\nhome=%s\n' "$id" "$token" "$home"
+    printf 'session=test\nworkspace_id=s%s\ntab_id=s%s:t1\npane_id=s%s:p1\n' "$i" "$i" "$i"
+    printf 'parent_workspace_id=w1\nparent_label=firstmate\nworkspace_label=%s\ntask_label=fm-%s\n' \
+      "$(fm_backend_herdr_projection_workspace_label "$id" "$token")" "$id"
+  fi > "$FM_STATE_OVERRIDE/$id.herdr-presentation"
+}
+
+# Workspaces 1 and 2 are clean v1 and v2 candidates and must close.
+# Workspace 3 has two matching journals and workspace 4 a cross-home v2
+# journal, so the first pass keeps both. The rest of the journalled workspaces
+# rotate through current task metadata, a registered agent, and a non-idle
+# shell, and workspaces past the last journal have no journal at all.
+scale_workspaces='{"workspace_id":"w1","label":"firstmate","focused":true,"active_tab_id":"w1:t1","tab_count":1,"pane_count":1}'
+scale_tabs='{"tab_id":"w1:t1","workspace_id":"w1","focused":true,"label":"firstmate"}'
+scale_panes='{"pane_id":"w1:p1","tab_id":"w1:t1","workspace_id":"w1","agent_status":"unknown"}'
+i=1
+while [ "$i" -le "$SCALE_WORKSPACES" ]; do
+  token=$(scale_token "$i")
+  label=$(fm_backend_herdr_projection_workspace_label "scale-$i" "$token")
+  printf '%s\n' "$label" > "$SCALE_DIR/label-s$i"
+  scale_workspaces="$scale_workspaces,{\"workspace_id\":\"s$i\",\"label\":\"$label\",\"focused\":false,\"active_tab_id\":\"s$i:t1\",\"tab_count\":1,\"pane_count\":1}"
+  scale_tabs="$scale_tabs,{\"tab_id\":\"s$i:t1\",\"workspace_id\":\"s$i\",\"focused\":false,\"label\":\"fm-scale-$i\"}"
+  scale_panes="$scale_panes,{\"pane_id\":\"s$i:p1\",\"tab_id\":\"s$i:t1\",\"workspace_id\":\"s$i\",\"agent_status\":\"unknown\"}"
+  if [ "$i" -le "$SCALE_JOURNALS" ]; then
+    case "$i" in
+      1) scale_write_journal "scale-$i" "$token" 1 ;;
+      2) scale_write_journal "scale-$i" "$token" 2 "$FM_HOME" "$i" ;;
+      3) scale_write_journal "scale-$i" "$token" 1; scale_write_journal "fm-scale-$i" "$token" 1 ;;
+      4) scale_write_journal "scale-$i" "$token" 2 "$TMP_ROOT/other-home" "$i" ;;
+      *)
+        scale_write_journal "scale-$i" "$token" $((i % 2 + 1)) "$FM_HOME" "$i"
+        case $((i % 3)) in
+          0) : > "$FM_STATE_OVERRIDE/scale-$i.meta" ;;
+          1) : > "$SCALE_DIR/live-s$i:p1" ;;
+          2) : > "$SCALE_DIR/unsafe-s$i:p1" ;;
+        esac
+        ;;
+    esac
+  fi
+  i=$((i + 1))
+done
+printf '{"result":{"workspaces":[%s]}}\n' "$scale_workspaces" > "$SCALE_DIR/workspace-list"
+printf '{"result":{"snapshot":{"focused_workspace_id":"w1","focused_tab_id":"w1:t1","focused_pane_id":"w1:p1","workspaces":[%s],"tabs":[%s],"panes":[%s]}}}\n' \
+  "$scale_workspaces" "$scale_tabs" "$scale_panes" > "$SCALE_DIR/api-snapshot"
+
+(
+  # shellcheck disable=SC2329 # invoked indirectly by the cleanup under test.
+  fm_backend_herdr_cli() {
+    local first=${2:-} second=${3:-} target=${4:-} workspace
+    case "$first $second" in
+      "workspace list") cat "$SCALE_DIR/workspace-list" ;;
+      "api snapshot") cat "$SCALE_DIR/api-snapshot" ;;
+      "workspace get")
+        printf '{"result":{"workspace":{"workspace_id":"%s","label":"%s","focused":false,"active_tab_id":"%s:t1","tab_count":1,"pane_count":1}}}\n' \
+          "$target" "$(cat "$SCALE_DIR/label-$target")" "$target"
+        ;;
+      "tab list")
+        workspace=${5:-}
+        printf '{"result":{"tabs":[{"tab_id":"%s:t1","workspace_id":"%s","focused":false,"label":"fm-task"}]}}\n' "$workspace" "$workspace"
+        ;;
+      "pane list")
+        workspace=${5:-}
+        printf '{"result":{"panes":[{"pane_id":"%s:p1","tab_id":"%s:t1","workspace_id":"%s","agent_status":"unknown"}]}}\n' \
+          "$workspace" "$workspace" "$workspace"
+        ;;
+      "pane get")
+        if [ -e "$SCALE_DIR/closed-$target" ]; then
+          printf '%s\n' '{"error":{"code":"pane_not_found"}}' >&2
+          return 1
+        fi
+        printf '{"result":{"pane":{"pane_id":"%s","tab_id":"%s","workspace_id":"%s"}}}\n' \
+          "$target" "${target%%:*}:t1" "${target%%:*}"
+        ;;
+      "agent get")
+        if [ -e "$SCALE_DIR/live-$target" ]; then
+          printf '%s\n' '{"result":{"agent":{"agent_status":"idle"}}}'
+        else
+          printf '%s\n' '{"error":{"code":"agent_not_found"}}' >&2
+          return 1
+        fi
+        ;;
+      *) return 1 ;;
+    esac
+  }
+  # shellcheck disable=SC2329 # invoked indirectly by the cleanup under test.
+  fm_backend_herdr_pane_idle_shell_pid() { [ ! -e "$SCALE_DIR/unsafe-$2" ] && printf '67\n'; }
+  # shellcheck disable=SC2329 # invoked indirectly by the cleanup under test.
+  fm_backend_herdr_projection_focus_snapshot() { printf 'w1\tw1:t1'; }
+  # shellcheck disable=SC2329 # invoked indirectly by the cleanup under test.
+  fm_backend_herdr_projection_close_pane_focus_preserving() {
+    [ "${3:-}" = no-agent ] || return 1
+    printf '%s\n' "$2" >> "$CLOSE_LOG"
+    : > "$SCALE_DIR/closed-$2"
+    SCALE_AFTER_CLOSE=1
+  }
+
+  # Count journal reads outside the pre-mutation revalidation and the post-close
+  # recheck, which keep their full rescan as the safety proof.
+  eval "scale_original_$(declare -f fm_backend_herdr_projection_journal_snapshot)"
+  # shellcheck disable=SC2329 # invoked indirectly by the cleanup under test.
+  fm_backend_herdr_projection_journal_snapshot() {
+    case " ${FUNCNAME[*]} " in
+      *' fm_herdr_cleanup_revalidate '*) ;;
+      *) [ "${SCALE_AFTER_CLOSE:-0}" = 1 ] || printf '%s\n' "$1" >> "$SCALE_READS" ;;
+    esac
+    scale_original_fm_backend_herdr_projection_journal_snapshot "$@"
+  }
+  eval "scale_original_$(declare -f fm_herdr_cleanup_one)"
+  # shellcheck disable=SC2329 # invoked indirectly by the cleanup under test.
+  fm_herdr_cleanup_one() {
+    SCALE_AFTER_CLOSE=0
+    scale_original_fm_herdr_cleanup_one "$@"
+  }
+
+  fm_herdr_session_cleanup >/dev/null 2>&1
+  [ "$(sort "$CLOSE_LOG" | tr '\n' ' ')" = 's1:p1 s2:p1 ' ] \
+    || fail "scale cleanup closed the wrong panes: $(tr '\n' ' ' < "$CLOSE_LOG")"
+  [ ! -e "$FM_STATE_OVERRIDE/scale-1.herdr-presentation" ] \
+    && [ ! -e "$FM_STATE_OVERRIDE/scale-2.herdr-presentation" ] \
+    || fail "scale cleanup kept a closed candidate's journal"
+  remaining=$(find "$FM_STATE_OVERRIDE" -name '*.herdr-presentation' | wc -l | tr -d ' ')
+  [ "$remaining" = $((SCALE_JOURNALS - 1)) ] || fail "scale cleanup retired the wrong journals: $remaining remain"
+  pass "scale cleanup closes exactly the clean candidates and keeps every other journal"
+  scale_counts=$(sort "$SCALE_READS" | uniq -c | awk '{ print $1 }' | sort -u | tr '\n' ' ')
+  [ "$scale_counts" = '1 ' ] || fail "first-pass journal read counts were '$scale_counts', not once each"
+  [ "$(sort -u "$SCALE_READS" | wc -l | tr -d ' ')" = $((SCALE_JOURNALS + 1)) ] \
+    || fail "first pass did not read every journal"
+  pass "scale cleanup first pass reads each journal once"
+) || exit 1
+
 INTEGRATION_ROOT="$TMP_ROOT/bootstrap-integration"
 mkdir -p "$INTEGRATION_ROOT/home/state" "$INTEGRATION_ROOT/home/data" "$INTEGRATION_ROOT/home/config"
 cp -R "$ROOT/bin" "$INTEGRATION_ROOT/bin"
